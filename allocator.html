@@ -103,7 +103,7 @@
                         MOST (80% Gen-Z / 20% Mill.)
                     </button>
                     <button onclick="applyPreset('MOVE')" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition">
-                        MOVE (60% Prof. / 40% Gen-X)
+                        MOVE (80% Mill. / 20% B.B.)
                     </button>
                     <button onclick="normalizeTargeting()" id="normalizeBtn" class="hidden px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition">
                         Нормалізувати до 100%
@@ -372,8 +372,8 @@
 
         // Початкові значення ROMI
         const ROMI_PRESETS = {
-            MOST: { owned: 0.50, paid: 0.33, earned: 0.58, traditional: -0.27, outdoor: -0.29 },
-            MOVE: { owned: 0.77, paid: 0.75, earned: 0.92, traditional: 0.24,  outdoor: 0.78 }
+            MOST: { owned: -0.28, paid: -0.27, earned: 0.08, traditional: 1.24, outdoor: -0.4 },
+            MOVE: { owned: -0.26, paid: -0.23, earned: 0.08, traditional: 0.36,  outdoor: -0.23 }
         };
 
         // Активний стан додатку
@@ -445,7 +445,7 @@
                 targeting = { genz: 80, millennials: 20, genx: 0, boomers: 0, professionals: 0 };
                 applyRomiPreset('MOST');
             } else if (brand === 'MOVE') {
-                targeting = { genz: 0, millennials: 0, genx: 40, boomers: 0, professionals: 60 };
+                targeting = { genz: 0, millennials: 80, genx: 00, boomers: 20, professionals: 60 };
                 applyRomiPreset('MOVE');
             }
             updateTargetingUI();
