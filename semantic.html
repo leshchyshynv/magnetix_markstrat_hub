@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markstrat 6D Semantic Scales — Weighted Analyzer (Magnetix)</title>
+    <title>Markstrat 6D Semantic Scales & Trend Forecaster (Magnetix)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Plotly.js -->
+    <!-- Plotly.js для 3D-сцени та 6-осьового радара -->
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <!-- Chart.js для багатоперіодного графіка трендів -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <!-- Шрифти Inter та JetBrains Mono -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -47,48 +49,58 @@
 
     <!-- Верхня панель навігації -->
     <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3">
-        <div class="max-w-[1680px] mx-auto flex flex-wrap items-center justify-between gap-3">
+        <div class="max-w-[1720px] mx-auto flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-emerald-600 flex items-center justify-center text-slate-950 font-extrabold shadow-lg shadow-cyan-500/20 text-sm font-mono">
-                    6D+W
-                </div>
+                <a href="index.html" title="Назад до Command Center" class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-indigo-600 flex items-center justify-center text-slate-950 font-extrabold shadow-lg shadow-cyan-500/20 text-xs font-mono hover:scale-105 transition">
+                    6D+P3
+                </a>
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Markstrat 6D Semantic Scales — Weighted Analyzer</h1>
+                        <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Markstrat 6D Semantic Scales & Trend Forecaster</h1>
                         <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                            Magnetix • Sonites
+                            Period 2 • Magnetix
                         </span>
                     </div>
-                    <p class="text-xs text-slate-400">Зважена модель сприйняття (Importance 1–10 × Шкала 1–7) та симулятор Perceptual Objectives</p>
+                    <p class="text-xs text-slate-400">Зважений 6D-аналіз, еволюція ідеалів (P0→P1→P2) та прогноз цілей на Період 3</p>
                 </div>
             </div>
 
             <div class="flex flex-wrap items-center gap-2.5">
-                <!-- Перемикач зваженої та базової моделі -->
-                <div class="flex items-center gap-2.5 bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-xl">
-                    <span id="modeLabelText" class="text-xs font-semibold text-cyan-300">Weighted Distance (Зважена модель)</span>
+                <!-- Перемикач цілі: P2 Факт vs P3 Прогноз -->
+                <div class="flex items-center bg-slate-800/90 border border-slate-700 p-1 rounded-xl text-xs font-semibold">
+                    <button id="targetModeP2Btn" onclick="setTargetMode('P2')" class="px-2.5 py-1 rounded-lg transition text-slate-400 hover:text-white">
+                        Ціль: P2 Факт
+                    </button>
+                    <button id="targetModeP3Btn" onclick="setTargetMode('P3')" class="px-2.5 py-1 rounded-lg transition bg-amber-500 text-slate-950 shadow">
+                        Ціль: P3 Прогноз ★
+                    </button>
+                </div>
+
+                <!-- Перемикач Weighted vs Unweighted -->
+                <div class="flex items-center gap-2 bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-xl">
+                    <span id="weightedModeLabel" class="text-xs font-semibold text-cyan-300">Weighted (Зважена)</span>
                     <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="weightedToggle" checked onchange="onModeToggle()" class="sr-only peer">
+                        <input type="checkbox" id="weightedToggle" checked onchange="onWeightedToggle()" class="sr-only peer">
                         <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
                     </label>
                 </div>
 
-                <!-- Редагування координат -->
-                <button onclick="openCoordsModal()" class="px-3 py-2 text-xs sm:text-sm font-medium rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5">
+                <!-- Модальне вікно редагування даних -->
+                <button onclick="openDataModal()" class="px-3 py-2 text-xs sm:text-sm font-medium rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5">
                     <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    <span>Оновити координати</span>
+                    <span class="hidden md:inline">Редагувати базу</span>
                 </button>
 
-                <!-- Копіювати звіт -->
-                <button onclick="copyDecideSummary()" class="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white transition flex items-center gap-2 shadow-md shadow-emerald-600/20">
+                <!-- Копіювати звіт для DECIDE -->
+                <button onclick="copyDecideReport()" class="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white transition flex items-center gap-2 shadow-md shadow-emerald-600/20">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                    <span class="hidden sm:inline">Копіювати для DECIDE</span>
+                    <span>Копіювати для DECIDE</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Toast сповіщення -->
+    <!-- Спливаюче сповіщення (Toast) -->
     <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
         <div class="bg-slate-800 text-white px-4 py-3 rounded-xl shadow-2xl text-sm font-medium flex items-center gap-2.5 border border-slate-700">
             <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
@@ -96,130 +108,130 @@
         </div>
     </div>
 
-    <!-- Основний контейнер -->
-    <main class="flex-1 max-w-[1680px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+    <!-- Основний робочий простір -->
+    <main class="flex-1 max-w-[1720px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-        <!-- Ліва колонка: Налаштування та Симулятор (4 колонки) -->
+        <!-- Ліва колонка: Налаштування, Ваги та Симулятор (4 колонки) -->
         <aside class="lg:col-span-4 flex flex-col gap-4">
 
-            <!-- Блок 1: Вибір бренду та сегмента -->
+            <!-- Картка 1: Вибір бренду та сегмента -->
             <div class="bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-sm">
                 <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">1. Бренд та Цільовий Сегмент</h2>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">1. Пара для аналізу та прогнозу</h2>
                     <button onclick="resetSimulation()" class="text-xs font-medium text-cyan-400 hover:text-cyan-300 hover:underline transition">
-                        Скинути симуляцію
+                        Скинути зсув
                     </button>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                     <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Активний бренд (Magnetix)</label>
-                        <select id="brandSelect" onchange="onBrandOrSegmentChange(true)" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Бренд команди Magnetix</label>
+                        <select id="brandSelect" onchange="onSelectionChange(true)" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
                             <option value="MOST">MOST (Magnetix)</option>
                             <option value="MOVE">MOVE (Magnetix)</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Цільовий сегмент (Ідеал)</label>
-                        <select id="segmentSelect" onchange="onBrandOrSegmentChange(true)" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Цільовий сегмент</label>
+                        <select id="segmentSelect" onchange="onSelectionChange(true)" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
                             <option value="Gen-Z">Gen-Z</option>
                             <option value="Millennials">Millennials</option>
                             <option value="Gen-X">Gen-X</option>
-                            <option value="Baby Boomers">Baby Boomers</option>
+                            <option value="Baby Boomer">Baby Boomer</option>
                             <option value="Professionals">Professionals</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- Швидкий авто-зсув -->
+                <!-- Швидкий авто-зсув на 1 період -->
                 <div class="p-3 rounded-xl bg-cyan-950/35 border border-cyan-500/30">
                     <div class="flex items-center justify-between gap-2 mb-2">
-                        <span class="text-xs font-semibold text-cyan-300">Симулятор 1 періоду</span>
-                        <span class="text-[11px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-500/30 font-mono">Топ-2 Weighted • ±0.4</span>
+                        <span class="text-xs font-semibold text-cyan-300">Симулятор 1 періоду (Реклама)</span>
+                        <span id="shiftTargetBadge" class="text-[11px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">До P3 Forecast</span>
                     </div>
-                    <button onclick="autoShiftTop2Weighted()" class="w-full py-2.5 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:scale-[0.99] text-slate-950 text-xs sm:text-sm font-bold shadow-md shadow-cyan-600/20 transition flex items-center justify-center gap-2">
+                    <button onclick="autoShiftTop2()" class="w-full py-2.5 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:scale-[0.99] text-slate-950 text-xs sm:text-sm font-bold shadow-md shadow-cyan-600/20 transition flex items-center justify-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
-                        <span>Auto-Shift Top 2 Weighted Gaps (±0.4)</span>
+                        <span>Посунути Топ-2 пріоритети на ±0.4</span>
                     </button>
                     <p class="text-[11px] text-slate-400 mt-1.5 leading-tight">
-                        Зсуває 2 параметри з найбільшим зваженим впливом (|Δ| × Weight) на 0.4 бала у бік ідеалу сегмента.
+                        Симулює реалістичний рекламний зсув (±0.4 бала) за 2 атрибутами з найбільшим зваженим розривом до обраної цілі.
                     </p>
                 </div>
             </div>
 
-            <!-- Блок 2: Ваги важливості характеристик (Importance 1-10) -->
+            <!-- Картка 2: Ваги важливості (Importance 1-10) -->
             <div class="bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-sm">
                 <div class="flex items-center justify-between mb-2">
                     <div>
-                        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">2. Ваги важливості (Importance 1–10)</h2>
-                        <p class="text-[11px] text-slate-500">Загальна сума ваг: <span id="totalWeightsSum" class="font-mono text-slate-300">24.3</span></p>
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">2. Ваги важливості (Importance)</h2>
+                        <p class="text-[11px] text-slate-500">Сума ваг: <span id="weightsSumText" class="font-mono text-slate-300">24.3</span></p>
                     </div>
                     <button onclick="resetWeights()" class="text-xs font-medium text-amber-400 hover:text-amber-300 hover:underline">
-                        Reset to Report Weights
+                        Скинути ваги
                     </button>
                 </div>
 
-                <div id="weightsContainer" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-2 mt-3">
-                    <!-- Заповнюється через JS -->
+                <div id="weightsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-2 mt-2.5">
+                    <!-- Генерується через JS -->
                 </div>
             </div>
 
-            <!-- Блок 3: 6D Симулятор координат бренду (1-7) -->
+            <!-- Картка 3: 6D Симулятор координат (1.0 - 7.0) -->
             <div class="bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-sm">
                 <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">3. Симулятор координат (1.0 – 7.0)</h2>
-                    <span class="text-[11px] text-slate-500">Тест ціни / реклами / R&D</span>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">3. Симулятор координат бренду (1–7)</h2>
+                    <span class="text-[11px] text-slate-500">Факт P2 vs План P3</span>
                 </div>
 
-                <div id="slidersContainer" class="space-y-2.5">
-                    <!-- Заповнюється через JS -->
+                <div id="slidersGrid" class="space-y-2.5">
+                    <!-- Генерується через JS -->
                 </div>
             </div>
 
         </aside>
 
-        <!-- Права колонка: Аналітика, Рекомендації DECIDE, Графіки та Таблиця (8 колонок) -->
+        <!-- Права колонка: Метрики, DECIDE, Модуль еволюції P0-P3, 3D та Таблиця (8 колонок) -->
         <section class="lg:col-span-8 flex flex-col gap-4">
 
-            <!-- Верхній ряд: KPI картки + Розумний блок DECIDE -->
+            <!-- Ряд 1: KPI картки + Smart DECIDE Recommendations -->
             <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
 
-                <!-- KPI картки (5 колонок) -->
+                <!-- KPI Метрики (5 колонок) -->
                 <div class="xl:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-sm flex flex-col justify-between">
                     <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <span id="kpiModelTitle" class="text-xs font-bold uppercase tracking-wider text-cyan-400">Зважені метрики (Weighted 6D)</span>
-                            <span id="pairBadge" class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-200 border border-slate-700">MOST → Gen-Z</span>
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span id="kpiHeaderLabel" class="text-xs font-bold uppercase tracking-wider text-cyan-400">Weighted 6D Distance</span>
+                            <span id="kpiPairBadge" class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700">MOST → Gen-Z (P3)</span>
                         </div>
 
                         <div class="grid grid-cols-2 gap-3 mt-3">
                             <div class="p-3 rounded-xl bg-slate-800/70 border border-slate-700/70">
-                                <div id="distMetricLabel" class="text-[11px] text-slate-400">Weighted 6D Distance</div>
+                                <div class="text-[11px] text-slate-400">6D Відстань до цілі</div>
                                 <div class="flex items-baseline gap-2 mt-1">
-                                    <span id="kpiSimDist" class="text-2xl font-bold font-mono text-white">5.67</span>
+                                    <span id="kpiSimDist" class="text-2xl font-bold font-mono text-white">5.88</span>
                                     <span id="kpiDeltaDist" class="text-xs font-semibold font-mono text-slate-400">0.00</span>
                                 </div>
-                                <div class="text-[11px] text-slate-500 mt-0.5">Початкова: <span id="kpiOrigDist" class="font-mono">5.67</span></div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">Без зсуву: <span id="kpiOrigDist" class="font-mono">5.88</span></div>
                             </div>
 
                             <div class="p-3 rounded-xl bg-slate-800/70 border border-slate-700/70">
-                                <div id="simMetricLabel" class="text-[11px] text-slate-400">Weighted Similarity Index</div>
+                                <div class="text-[11px] text-slate-400">Similarity Index</div>
                                 <div class="flex items-baseline gap-2 mt-1">
-                                    <span id="kpiSimIdx" class="text-2xl font-bold font-mono text-emerald-400">92.4%</span>
+                                    <span id="kpiSimIdx" class="text-2xl font-bold font-mono text-emerald-400">92.1%</span>
                                     <span id="kpiDeltaIdx" class="text-xs font-semibold font-mono text-slate-400">0.0%</span>
                                 </div>
-                                <div class="text-[11px] text-slate-500 mt-0.5">Ранг у сегменті: <span id="kpiRank" class="text-cyan-400 font-bold">#1 з 8</span></div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">Позиція в сегменті: <span id="kpiRankText" class="text-cyan-400 font-bold">#1 з 8</span></div>
                             </div>
                         </div>
                     </div>
 
                     <div class="mt-3 pt-2.5 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-                        <span>Базова (Unweighted) відстань:</span>
-                        <span id="unweightedRefDist" class="font-mono text-slate-300">2.59 (Sim: 82.4%)</span>
+                        <span>Порівняння з P2 Actual Ideal:</span>
+                        <span id="p2ComparisonNote" class="font-mono text-slate-300">Dist: 5.91 (Sim: 92.1%)</span>
                     </div>
                 </div>
 
-                <!-- Розумний блок DECIDE Recommendations (7 колонок) -->
+                <!-- Блок Smart DECIDE Recommendation (7 колонок) -->
                 <div class="xl:col-span-7 bg-slate-900 rounded-2xl border border-amber-500/30 p-4 shadow-sm flex flex-col justify-between">
                     <div>
                         <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
@@ -227,34 +239,73 @@
                                 <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
                                 <h3 class="text-xs font-bold uppercase tracking-wider text-amber-300">Smart DECIDE Recommendation (Топ-2 Weighted Impact)</h3>
                             </div>
-                            <span class="text-[11px] font-mono text-slate-400">Impact = |Brand − Ideal| × Weight</span>
+                            <span id="decideTargetModeText" class="text-[11px] font-mono text-amber-200/80">Орієнтир: Period 3 Forecast</span>
                         </div>
 
-                        <div id="decideCardsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                        <div id="decideCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                             <!-- Генерується через JS -->
                         </div>
                     </div>
 
-                    <!-- Стратегічна примітка про Price vs Perceptual Objectives -->
-                    <div id="priceStrategyNotice" class="mt-3 p-2.5 rounded-xl bg-amber-950/30 border border-amber-500/25 text-[11px] text-amber-200/90 leading-relaxed flex items-start gap-2">
+                    <div class="mt-3 p-2.5 rounded-xl bg-amber-950/30 border border-amber-500/25 text-[11px] text-amber-200/90 leading-relaxed flex items-start gap-2">
                         <svg class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <span id="priceNoticeText">
-                            <strong>Порада для DECIDE:</strong> Вісь <strong>Price</strong> (вага 10.0) найкраще та найшвидше коригується прямою зміною ціни в <em>Marketing Mix</em>, тоді як у <em>Perceptual Objectives</em> варто вказувати нецінові характеристики (наприклад, <em>Display</em> та <em>Design</em>).
-                        </span>
+                        <span id="decideAdviceText">Завантаження рекомендації...</span>
                     </div>
                 </div>
 
             </div>
 
-            <!-- Середній ряд: 3D Графік + (Радар & Графік зваженого впливу) -->
+            <!-- Ряд 2: НОВИЙ МОДУЛЬ — Еволюція та прогноз ідеальних точок (P0 -> P1 -> P2 -> P3 Forecast) -->
+            <div class="bg-slate-900 rounded-2xl border border-indigo-500/30 p-4 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm sm:text-base font-bold text-white">Еволюція та прогноз ідеальних точок: <span id="trendSegmentTitle" class="text-indigo-400">Gen-Z</span></h3>
+                            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                P0 → P1 → P2 → P3 Forecast
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400">Лінійна екстраполяція тренду вподобань сегмента на наступний період: P3 = P2 + (P2 − P0) / 2</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 items-center">
+                    <!-- Графік динаміки (Chart.js) -->
+                    <div class="xl:col-span-5 h-[240px] bg-slate-950/60 rounded-xl border border-slate-800/80 p-2.5">
+                        <canvas id="trendLineChart"></canvas>
+                    </div>
+
+                    <!-- Таблиця історії та прогнозу на P3 -->
+                    <div class="xl:col-span-7 overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-400">
+                                    <th class="py-2 pr-2 font-semibold">Атрибут (Вага)</th>
+                                    <th class="py-2 px-2 font-semibold text-right">P0</th>
+                                    <th class="py-2 px-2 font-semibold text-right">P1</th>
+                                    <th class="py-2 px-2 font-semibold text-right text-white">P2 (Факт)</th>
+                                    <th class="py-2 px-2 font-semibold text-right">Крок / пер.</th>
+                                    <th class="py-2 px-2 font-semibold text-right text-amber-400">P3 Прогноз</th>
+                                    <th class="py-2 pl-2 font-semibold text-right text-cyan-400">Розрив (Бренд−P3)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trendTableBody" class="divide-y divide-slate-800/60">
+                                <!-- Генерується через JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ряд 3: 3D-Проєкція із траєкторією сегмента + 6-осьовий Radar Chart -->
             <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
 
-                <!-- 3D Семантичний Куб (7 колонок) -->
+                <!-- 3D Куб (7 колонок) -->
                 <div class="xl:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-sm flex flex-col">
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                         <div>
-                            <h3 class="text-sm font-bold text-white">Інтерактивна 3D-проєкція (шкала 1–7)</h3>
-                            <p id="cubeAxesSubtitle" class="text-xs text-slate-400">Осі: Price × Display × Design</p>
+                            <h3 class="text-sm font-bold text-white">Інтерактивна 3D-проєкція та траєкторія P0→P3</h3>
+                            <p id="cubeSubtitle" class="text-xs text-slate-400">Осі: Price (X) × Proc. Power (Y) × Design (Z)</p>
                         </div>
                         <div class="flex items-center gap-1.5">
                             <select id="axisX" onchange="updateAll()" title="Вісь X" class="rounded-lg bg-slate-800 border border-slate-700 px-2 py-1 text-xs font-semibold text-cyan-300 focus:outline-none"></select>
@@ -262,35 +313,26 @@
                             <select id="axisZ" onchange="updateAll()" title="Вісь Z" class="rounded-lg bg-slate-800 border border-slate-700 px-2 py-1 text-xs font-semibold text-amber-300 focus:outline-none"></select>
                         </div>
                     </div>
-                    <div id="semantic3dPlot" class="w-full h-[390px] sm:h-[430px] rounded-xl overflow-hidden"></div>
+                    <div id="semantic3dPlot" class="w-full h-[380px] sm:h-[420px] rounded-xl overflow-hidden"></div>
                 </div>
 
-                <!-- Права підколонка: 6D Radar + Weighted Impact Bar Chart (5 колонок) -->
-                <div class="xl:col-span-5 flex flex-col gap-4">
-                    <!-- 6-осьовий Radar Chart -->
-                    <div class="bg-slate-900 rounded-2xl border border-slate-800 p-3.5 shadow-sm">
-                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">6-осьовий профіль (Бренд vs Ідеал)</h3>
-                        <div id="radarPlot" class="w-full h-[220px]"></div>
+                <!-- 6-осьовий Radar Chart (5 колонок) -->
+                <div class="xl:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-white mb-0.5">6-осьовий профіль сприйняття</h3>
+                        <p class="text-xs text-slate-400 mb-2">Порівняння бренду з P2 Actual та P3 Forecast</p>
                     </div>
-
-                    <!-- Горизонтальний бар-чарт Weighted Impact -->
-                    <div class="bg-slate-900 rounded-2xl border border-slate-800 p-3.5 shadow-sm">
-                        <div class="flex items-center justify-between mb-1">
-                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Weighted Impact по атрибутах (|Δ| × Weight)</h3>
-                            <span class="text-[10px] text-slate-400">Пріоритет виправлення</span>
-                        </div>
-                        <div id="impactBarPlot" class="w-full h-[180px]"></div>
-                    </div>
+                    <div id="radarPlot" class="w-full h-[360px] sm:h-[390px]"></div>
                 </div>
 
             </div>
 
-            <!-- Нижній ряд: Повна таблиця конкурентного рейтингу -->
+            <!-- Ряд 4: Конкурентний рейтинг усіх 8 брендів -->
             <div class="bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-sm overflow-hidden">
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <div>
-                        <h3 class="text-sm font-bold text-white">Конкурентний рейтинг у сегменті <span id="tableSegmentName" class="text-amber-400">Gen-Z</span></h3>
-                        <p class="text-xs text-slate-400">Порівняння зваженої (Weighted) та базової (Unweighted) 6D-відстані для всіх 8 брендів</p>
+                        <h3 class="text-sm font-bold text-white">Конкурентний рейтинг у сегменті <span id="rankingSegLabel" class="text-amber-400">Gen-Z (P3 Forecast)</span></h3>
+                        <p class="text-xs text-slate-400">Позиції брендів на Період 2 проти обраної цілі сегмента</p>
                     </div>
                 </div>
 
@@ -312,7 +354,7 @@
                             </tr>
                         </thead>
                         <tbody id="rankingTableBody" class="divide-y divide-slate-800/60">
-                            <!-- Заповнюється через JS -->
+                            <!-- Генерується через JS -->
                         </tbody>
                     </table>
                 </div>
@@ -321,138 +363,191 @@
         </section>
     </main>
 
-    <!-- Модальне вікно для оновлення координат брендів та сегментів -->
-    <div id="coordsModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <!-- Модальне вікно редагування координат -->
+    <div id="dataModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full max-h-[88vh] flex flex-col shadow-2xl">
             <div class="p-4 border-b border-slate-800 flex items-center justify-between">
                 <div>
-                    <h3 class="text-base font-bold text-white">Редагування координат Semantic Scales (1.0 – 7.0)</h3>
-                    <p class="text-xs text-slate-400">Оновлюйте дані зі звіту Market Research після кожного періоду</p>
+                    <h3 class="text-base font-bold text-white">Редагування координат Brand Perceptions (Period 2)</h3>
+                    <p class="text-xs text-slate-400">Оновлюйте значення брендів у наступних періодах (шкала 1.00 – 7.00)</p>
                 </div>
-                <button onclick="closeCoordsModal()" class="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white">
+                <button onclick="closeDataModal()" class="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
 
-            <div class="p-4 overflow-y-auto space-y-6 text-xs">
-                <div>
-                    <h4 class="font-bold text-sm text-cyan-400 mb-2">Brand Perceptions (Бренди)</h4>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="border-b border-slate-800 text-slate-400">
-                                    <th class="py-1.5">Бренд</th>
-                                    <th class="py-1.5 text-center">Price</th>
-                                    <th class="py-1.5 text-center">Proc. Power</th>
-                                    <th class="py-1.5 text-center">Display</th>
-                                    <th class="py-1.5 text-center">Design</th>
-                                    <th class="py-1.5 text-center">Battery</th>
-                                    <th class="py-1.5 text-center"># Features</th>
-                                </tr>
-                            </thead>
-                            <tbody id="modalBrandsBody" class="divide-y divide-slate-800/60"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div>
-                    <h4 class="font-bold text-sm text-amber-400 mb-2">Ideal Values (Ідеальні точки сегментів)</h4>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="border-b border-slate-800 text-slate-400">
-                                    <th class="py-1.5">Сегмент</th>
-                                    <th class="py-1.5 text-center">Price</th>
-                                    <th class="py-1.5 text-center">Proc. Power</th>
-                                    <th class="py-1.5 text-center">Display</th>
-                                    <th class="py-1.5 text-center">Design</th>
-                                    <th class="py-1.5 text-center">Battery</th>
-                                    <th class="py-1.5 text-center"># Features</th>
-                                </tr>
-                            </thead>
-                            <tbody id="modalSegmentsBody" class="divide-y divide-slate-800/60"></tbody>
-                        </table>
-                    </div>
+            <div class="p-4 overflow-y-auto text-xs">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-slate-400">
+                                <th class="py-1.5">Бренд</th>
+                                <th class="py-1.5 text-center">Price</th>
+                                <th class="py-1.5 text-center">Proc. Power</th>
+                                <th class="py-1.5 text-center">Display</th>
+                                <th class="py-1.5 text-center">Design</th>
+                                <th class="py-1.5 text-center">Battery</th>
+                                <th class="py-1.5 text-center"># Features</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalBrandsBody" class="divide-y divide-slate-800/60"></tbody>
+                    </table>
                 </div>
             </div>
 
             <div class="p-4 border-t border-slate-800 flex justify-end gap-2">
-                <button onclick="closeCoordsModal()" class="px-4 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition">Скасувати</button>
-                <button onclick="saveModalCoords()" class="px-4 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-slate-950 transition">Зберегти та перерахувати</button>
+                <button onclick="closeDataModal()" class="px-4 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition">Скасувати</button>
+                <button onclick="saveModalData()" class="px-4 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-slate-950 transition">Зберегти та оновити</button>
             </div>
         </div>
     </div>
 
     <script>
-        // 6 характеристик у порядку спадання важливості зі звіту Importance of characteristics
-        const DIMENSIONS = [
-            { key: 'price',     label: 'Price',       short: 'Price',       defaultWeight: 10.0, color: '#06b6d4' },
-            { key: 'procPower', label: 'Proc. Power', short: 'Proc. Power', defaultWeight: 5.8,  color: '#10b981' },
-            { key: 'display',   label: 'Display',     short: 'Display',     defaultWeight: 3.1,  color: '#a855f7' },
-            { key: 'design',    label: 'Design',      short: 'Design',      defaultWeight: 2.7,  color: '#f43f5e' },
-            { key: 'battery',   label: 'Battery',     short: 'Battery',     defaultWeight: 1.5,  color: '#f59e0b' },
-            { key: 'features',  label: '# Features',  short: '# Features',  defaultWeight: 1.2,  color: '#38bdf8' }
+        // 6 атрибутів у порядку важливості (Importance of characteristics)
+        const ATTRIBUTES = [
+            { key: 'price',     label: 'Price',        short: 'Price',    defaultWeight: 10.0, color: '#06b6d4' },
+            { key: 'procPower', label: 'Proc. Power',  short: 'Proc.',    defaultWeight: 5.8,  color: '#10b981' },
+            { key: 'display',   label: 'Display Size', short: 'Display',  defaultWeight: 3.1,  color: '#a855f7' },
+            { key: 'design',    label: 'Design Index', short: 'Design',   defaultWeight: 2.7,  color: '#f43f5e' },
+            { key: 'battery',   label: 'Battery Life', short: 'Battery',  defaultWeight: 1.5,  color: '#f59e0b' },
+            { key: 'features',  label: '# Features',   short: 'Features', defaultWeight: 1.2,  color: '#38bdf8' }
         ];
 
-        // Точні дані Brand Perceptions (1-7)
-        let brandsData = [
-            { id: 'MOST', name: 'MOST', firm: 'Magnetix', isOurs: true,  features: 2.1, design: 2.3, battery: 3.3, display: 1.6, procPower: 1.5, price: 2.5 },
-            { id: 'MOVE', name: 'MOVE', firm: 'Magnetix', isOurs: true,  features: 4.3, design: 1.6, battery: 5.9, display: 3.1, procPower: 3.2, price: 5.1 },
-            { id: 'ROCK', name: 'ROCK', firm: 'REVO',     isOurs: false, features: 4.7, design: 6.4, battery: 6.5, display: 5.9, procPower: 5.4, price: 6.1 },
-            { id: 'ROLL', name: 'ROLL', firm: 'REVO',     isOurs: false, features: 4.3, design: 1.6, battery: 5.6, display: 6.5, procPower: 6.5, price: 6.4 },
-            { id: 'SOFT', name: 'SOFT', firm: 'Synergy',  isOurs: false, features: 1.7, design: 1.6, battery: 3.3, display: 1.6, procPower: 1.5, price: 2.3 },
-            { id: 'SOLO', name: 'SOLO', firm: 'Synergy',  isOurs: false, features: 1.7, design: 3.2, battery: 4.0, display: 2.1, procPower: 2.9, price: 4.5 },
-            { id: 'TONE', name: 'TONE', firm: 'Together', isOurs: false, features: 5.5, design: 6.5, battery: 5.3, display: 4.4, procPower: 5.4, price: 6.3 },
-            { id: 'TOPS', name: 'TOPS', firm: 'Together', isOurs: false, features: 2.9, design: 1.6, battery: 1.8, display: 6.4, procPower: 6.2, price: 5.2 }
+        // Точні дані Brand Perceptions на Period 2 (Sonites Market)
+        let brandsP2 = [
+            { id: 'MOST', name: 'MOST', firm: 'Magnetix', isOurs: true,  features: 2.11, design: 2.34, battery: 3.31, display: 1.65, procPower: 1.50, price: 2.66 },
+            { id: 'MOVE', name: 'MOVE', firm: 'Magnetix', isOurs: true,  features: 4.28, design: 1.76, battery: 5.96, display: 3.10, procPower: 3.28, price: 5.09 },
+            { id: 'ROCK', name: 'ROCK', firm: 'REVO',     isOurs: false, features: 4.70, design: 6.37, battery: 6.47, display: 5.87, procPower: 5.25, price: 5.81 },
+            { id: 'ROLL', name: 'ROLL', firm: 'REVO',     isOurs: false, features: 4.32, design: 1.63, battery: 5.61, display: 6.50, procPower: 6.27, price: 6.23 },
+            { id: 'SOFT', name: 'SOFT', firm: 'Synergy',  isOurs: false, features: 1.73, design: 1.63, battery: 3.31, display: 1.61, procPower: 1.73, price: 2.37 },
+            { id: 'SOLO', name: 'SOLO', firm: 'Synergy',  isOurs: false, features: 1.73, design: 3.23, battery: 4.00, display: 2.07, procPower: 2.98, price: 4.00 },
+            { id: 'TONE', name: 'TONE', firm: 'Together', isOurs: false, features: 5.51, design: 6.50, battery: 5.28, display: 4.59, procPower: 5.37, price: 6.00 },
+            { id: 'TOPS', name: 'TOPS', firm: 'Together', isOurs: false, features: 2.88, design: 1.63, battery: 1.84, display: 6.39, procPower: 6.14, price: 5.07 }
         ];
 
-        // Точні дані Segment Ideal Values (1-7)
-        let segmentsData = [
-            { id: 'Gen-Z',         name: 'Gen-Z',         features: 2.5, design: 3.9, battery: 1.8, display: 2.6, procPower: 2.2, price: 2.1 },
-            { id: 'Millennials',   name: 'Millennials',   features: 1.8, design: 5.1, battery: 2.9, display: 4.1, procPower: 3.9, price: 3.1 },
-            { id: 'Gen-X',         name: 'Gen-X',         features: 3.3, design: 6.4, battery: 3.6, display: 4.6, procPower: 4.8, price: 5.6 },
-            { id: 'Baby Boomers',  name: 'Baby Boomers',  features: 4.7, design: 1.8, battery: 6.0, display: 6.0, procPower: 6.3, price: 3.5 },
-            { id: 'Professionals', name: 'Professionals', features: 5.6, design: 5.9, battery: 5.1, display: 5.5, procPower: 5.3, price: 5.0 }
-        ];
+        // Точні історичні дані Ideal Values для Periods 0, 1, 2
+        const segmentsHistory = {
+            'Baby Boomer': {
+                P0: { features: 4.75, design: 1.72, battery: 6.24, display: 6.09, procPower: 6.38, price: 3.40 },
+                P1: { features: 4.65, design: 1.83, battery: 6.03, display: 6.02, procPower: 6.31, price: 3.53 },
+                P2: { features: 4.56, design: 1.94, battery: 5.83, display: 5.95, procPower: 6.24, price: 3.67 }
+            },
+            'Gen-X': {
+                P0: { features: 3.27, design: 6.39, battery: 3.59, display: 4.81, procPower: 4.89, price: 5.62 },
+                P1: { features: 3.27, design: 6.38, battery: 3.57, display: 4.64, procPower: 4.83, price: 5.59 },
+                P2: { features: 3.27, design: 6.37, battery: 3.55, display: 4.47, procPower: 4.78, price: 5.57 }
+            },
+            'Gen-Z': {
+                P0: { features: 2.48, design: 3.88, battery: 1.72, display: 2.44, procPower: 2.21, price: 2.16 },
+                P1: { features: 2.53, design: 3.89, battery: 1.75, display: 2.59, procPower: 2.23, price: 2.14 },
+                P2: { features: 2.58, design: 3.90, battery: 1.78, display: 2.74, procPower: 2.25, price: 2.12 }
+            },
+            'Millennials': {
+                P0: { features: 1.74, design: 5.16, battery: 2.94, display: 3.97, procPower: 3.63, price: 3.23 },
+                P1: { features: 1.81, design: 5.09, battery: 2.93, display: 4.13, procPower: 3.87, price: 3.13 },
+                P2: { features: 1.87, design: 5.02, battery: 2.91, display: 4.31, procPower: 4.14, price: 3.08 }
+            },
+            'Professionals': {
+                P0: { features: 5.81, design: 5.86, battery: 5.07, display: 5.36, procPower: 5.09, price: 4.77 },
+                P1: { features: 5.56, design: 5.85, battery: 5.05, display: 5.46, procPower: 5.28, price: 4.97 },
+                P2: { features: 5.32, design: 5.85, battery: 5.03, display: 5.55, procPower: 5.44, price: 5.20 }
+            }
+        };
 
         // Стан додатку
         let state = {
+            targetMode: 'P3', // 'P2' (факт) або 'P3' (прогноз)
             useWeighted: true,
             brandId: 'MOST',
             segmentId: 'Gen-Z',
             weights: { price: 10.0, procPower: 5.8, display: 3.1, design: 2.7, battery: 1.5, features: 1.2 },
-            simCoords: { features: 2.1, design: 2.3, battery: 3.3, display: 1.6, procPower: 1.5, price: 2.5 },
+            simCoords: { features: 2.11, design: 2.34, battery: 3.31, display: 1.65, procPower: 1.50, price: 2.66 },
             axisX: 'price',
             axisY: 'procPower',
             axisZ: 'design'
         };
 
-        let lastDecideReportText = '';
+        let trendChartInstance = null;
+        let lastReportText = '';
 
-        // Ініціалізація
+        // Ініціалізація при завантаженні
         window.addEventListener('DOMContentLoaded', () => {
             buildWeightsUI();
             buildSlidersUI();
             buildAxisSelectors();
-            onBrandOrSegmentChange(true);
+            initTrendChart();
+            onSelectionChange(true);
         });
 
-        // Побудова полів редагування ваг важливості (1-10)
-        function buildWeightsUI() {
-            const container = document.getElementById('weightsContainer');
-            container.innerHTML = '';
+        // Розрахунок прогнозу P3 для сегмента: P3 = clamp(1..7, P2 + (P2 - P0) / 2)
+        function getSegmentForecastP3(segName) {
+            const hist = segmentsHistory[segName];
+            const p3 = {};
+            const steps = {};
+            ATTRIBUTES.forEach(attr => {
+                const v0 = hist.P0[attr.key];
+                const v2 = hist.P2[attr.key];
+                const avgStep = (v2 - v0) / 2;
+                steps[attr.key] = avgStep;
+                const rawP3 = v2 + avgStep;
+                p3[attr.key] = Number(Math.max(1.0, Math.min(7.0, rawP3)).toFixed(2));
+            });
+            return { P0: hist.P0, P1: hist.P1, P2: hist.P2, P3: p3, steps };
+        }
 
-            DIMENSIONS.forEach(dim => {
-                const wVal = state.weights[dim.key];
+        // Отримання активної цільової точки сегмента (P2 або P3 Forecast)
+        function getActiveTargetCoords(segName) {
+            const data = getSegmentForecastP3(segName);
+            return state.targetMode === 'P3' ? data.P3 : data.P2;
+        }
+
+        // Перемикання режиму цілі (P2 Факт vs P3 Прогноз)
+        function setTargetMode(mode) {
+            state.targetMode = mode;
+            const btnP2 = document.getElementById('targetModeP2Btn');
+            const btnP3 = document.getElementById('targetModeP3Btn');
+            const badge = document.getElementById('shiftTargetBadge');
+
+            if (mode === 'P2') {
+                btnP2.className = 'px-2.5 py-1 rounded-lg transition bg-cyan-500 text-slate-950 shadow';
+                btnP3.className = 'px-2.5 py-1 rounded-lg transition text-slate-400 hover:text-white';
+                badge.textContent = 'До P2 Actual';
+                badge.className = 'text-[11px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-mono';
+            } else {
+                btnP3.className = 'px-2.5 py-1 rounded-lg transition bg-amber-500 text-slate-950 shadow';
+                btnP2.className = 'px-2.5 py-1 rounded-lg transition text-slate-400 hover:text-white';
+                badge.textContent = 'До P3 Forecast';
+                badge.className = 'text-[11px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono';
+            }
+            updateAll();
+        }
+
+        function onWeightedToggle() {
+            state.useWeighted = document.getElementById('weightedToggle').checked;
+            const lbl = document.getElementById('weightedModeLabel');
+            if (state.useWeighted) {
+                lbl.textContent = 'Weighted (Зважена)';
+                lbl.className = 'text-xs font-semibold text-cyan-300';
+            } else {
+                lbl.textContent = 'Unweighted (Базова)';
+                lbl.className = 'text-xs font-semibold text-slate-300';
+            }
+            updateAll();
+        }
+
+        function buildWeightsUI() {
+            const container = document.getElementById('weightsGrid');
+            container.innerHTML = '';
+            ATTRIBUTES.forEach(attr => {
                 const div = document.createElement('div');
                 div.className = 'flex items-center justify-between p-2 rounded-xl bg-slate-800/60 border border-slate-800';
                 div.innerHTML = `
                     <span class="text-xs font-medium text-slate-300 flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full" style="background-color: ${dim.color}"></span>
-                        ${dim.label}
+                        <span class="w-2 h-2 rounded-full" style="background-color: ${attr.color}"></span>
+                        ${attr.short}
                     </span>
-                    <input type="number" id="w_in_${dim.key}" min="0" max="10" step="0.1" value="${wVal.toFixed(1)}"
-                        oninput="onWeightChange('${dim.key}', this.value)"
+                    <input type="number" id="w_in_${attr.key}" min="0" max="10" step="0.1" value="${state.weights[attr.key].toFixed(1)}"
+                        oninput="onWeightChange('${attr.key}', this.value)"
                         class="w-16 text-right font-mono text-xs font-bold rounded-lg bg-slate-900 border border-slate-700 px-2 py-1 text-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-500">
                 `;
                 container.appendChild(div);
@@ -468,38 +563,36 @@
         }
 
         function resetWeights() {
-            DIMENSIONS.forEach(dim => {
-                state.weights[dim.key] = dim.defaultWeight;
-                document.getElementById(`w_in_${dim.key}`).value = dim.defaultWeight.toFixed(1);
+            ATTRIBUTES.forEach(attr => {
+                state.weights[attr.key] = attr.defaultWeight;
+                document.getElementById(`w_in_${attr.key}`).value = attr.defaultWeight.toFixed(1);
             });
             updateAll();
-            showToast('Ваги важливості відновлено за звітом Markstrat');
+            showToast('Ваги важливості скинуто до стандартних (10.0 ... 1.2)');
         }
 
-        // Побудова 6 повзунків симуляції координат (1-7)
         function buildSlidersUI() {
-            const container = document.getElementById('slidersContainer');
+            const container = document.getElementById('slidersGrid');
             container.innerHTML = '';
-
-            DIMENSIONS.forEach(dim => {
+            ATTRIBUTES.forEach(attr => {
                 const div = document.createElement('div');
                 div.className = 'p-2.5 rounded-xl bg-slate-800/45 border border-slate-800';
                 div.innerHTML = `
                     <div class="flex justify-between items-center mb-1">
                         <span class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full" style="background-color: ${dim.color}"></span>
-                            ${dim.label}
-                            <span id="w_tag_${dim.key}" class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">W:${dim.defaultWeight.toFixed(1)}</span>
+                            <span class="w-2 h-2 rounded-full" style="background-color: ${attr.color}"></span>
+                            ${attr.label}
+                            <span id="w_badge_${attr.key}" class="text-[10px] font-mono px-1.5 rounded bg-slate-800 text-slate-400">W:${attr.defaultWeight.toFixed(1)}</span>
                         </span>
                         <div class="flex items-center gap-2">
-                            <span id="orig_lbl_${dim.key}" class="text-[11px] font-mono text-slate-400">Факт: 2.5</span>
-                            <input type="number" id="num_${dim.key}" min="1" max="7" step="0.1" value="2.5"
-                                oninput="onCoordInput('${dim.key}', this.value)"
+                            <span id="orig_p2_${attr.key}" class="text-[11px] font-mono text-slate-400">P2: 2.66</span>
+                            <input type="number" id="num_${attr.key}" min="1" max="7" step="0.05" value="2.66"
+                                oninput="onCoordInput('${attr.key}', this.value)"
                                 class="w-16 text-right font-mono text-xs font-bold rounded-lg bg-slate-900 border border-slate-700 px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
                         </div>
                     </div>
-                    <input type="range" id="rng_${dim.key}" min="1" max="7" step="0.1" value="2.5"
-                        oninput="onCoordRange('${dim.key}', this.value)"
+                    <input type="range" id="rng_${attr.key}" min="1" max="7" step="0.05" value="2.66"
+                        oninput="onCoordRange('${attr.key}', this.value)"
                         class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
                 `;
                 container.appendChild(div);
@@ -510,59 +603,46 @@
             ['axisX', 'axisY', 'axisZ'].forEach(id => {
                 const sel = document.getElementById(id);
                 sel.innerHTML = '';
-                DIMENSIONS.forEach(dim => {
+                ATTRIBUTES.forEach(attr => {
                     const opt = document.createElement('option');
-                    opt.value = dim.key;
-                    opt.textContent = dim.short;
+                    opt.value = attr.key;
+                    opt.textContent = attr.short;
                     sel.appendChild(opt);
                 });
             });
         }
 
-        function onModeToggle() {
-            state.useWeighted = document.getElementById('weightedToggle').checked;
-            const lbl = document.getElementById('modeLabelText');
-            if (state.useWeighted) {
-                lbl.textContent = 'Weighted Distance (Зважена модель)';
-                lbl.className = 'text-xs font-semibold text-cyan-300';
-            } else {
-                lbl.textContent = 'Unweighted (Базова 6D)';
-                lbl.className = 'text-xs font-semibold text-slate-300';
-            }
-            updateAll();
-        }
-
-        function onBrandOrSegmentChange(autoAxes = true) {
+        function onSelectionChange(autoPickAxes = true) {
             state.brandId = document.getElementById('brandSelect').value;
             state.segmentId = document.getElementById('segmentSelect').value;
 
-            const brand = brandsData.find(b => b.id === state.brandId);
+            const brand = brandsP2.find(b => b.id === state.brandId);
             if (!brand) return;
 
-            DIMENSIONS.forEach(dim => {
-                state.simCoords[dim.key] = brand[dim.key];
-                document.getElementById(`orig_lbl_${dim.key}`).textContent = `Факт: ${brand[dim.key].toFixed(1)}`;
+            ATTRIBUTES.forEach(attr => {
+                state.simCoords[attr.key] = brand[attr.key];
+                document.getElementById(`orig_p2_${attr.key}`).textContent = `P2: ${brand[attr.key].toFixed(2)}`;
             });
 
-            syncSlidersFromState();
+            syncSlidersUI();
 
-            if (autoAxes) {
-                selectTop3WeightedAxes();
+            if (autoPickAxes) {
+                pickTop3WeightedAxes();
             }
             updateAll();
         }
 
-        function syncSlidersFromState() {
-            DIMENSIONS.forEach(dim => {
-                const v = state.simCoords[dim.key];
-                document.getElementById(`num_${dim.key}`).value = v.toFixed(1);
-                document.getElementById(`rng_${dim.key}`).value = v;
+        function syncSlidersUI() {
+            ATTRIBUTES.forEach(attr => {
+                const v = state.simCoords[attr.key];
+                document.getElementById(`num_${attr.key}`).value = v.toFixed(2);
+                document.getElementById(`rng_${attr.key}`).value = v;
             });
         }
 
         function onCoordRange(key, val) {
             state.simCoords[key] = parseFloat(val);
-            document.getElementById(`num_${key}`).value = state.simCoords[key].toFixed(1);
+            document.getElementById(`num_${key}`).value = state.simCoords[key].toFixed(2);
             updateAll();
         }
 
@@ -570,25 +650,24 @@
             let num = parseFloat(val);
             if (isNaN(num)) num = 1.0;
             num = Math.max(1.0, Math.min(7.0, num));
-            state.simCoords[key] = Number(num.toFixed(1));
+            state.simCoords[key] = Number(num.toFixed(2));
             document.getElementById(`rng_${key}`).value = state.simCoords[key];
             updateAll();
         }
 
         function resetSimulation() {
-            onBrandOrSegmentChange(false);
-            showToast('Координати симуляції скинуто до фактичних');
+            onSelectionChange(false);
+            showToast('Координати скинуто до фактичних значень Періоду 2');
         }
 
-        // Автоматичний вибір 3 осей із найбільшим Weighted Impact для 3D-графіка
-        function selectTop3WeightedAxes() {
-            const brand = brandsData.find(b => b.id === state.brandId);
-            const seg = segmentsData.find(s => s.id === state.segmentId);
-            if (!brand || !seg) return;
+        function pickTop3WeightedAxes() {
+            const brand = brandsP2.find(b => b.id === state.brandId);
+            const targetCoords = getActiveTargetCoords(state.segmentId);
+            if (!brand || !targetCoords) return;
 
-            const sorted = [...DIMENSIONS].sort((a, b) => {
-                const impA = Math.abs(brand[a.key] - seg[a.key]) * (state.useWeighted ? state.weights[a.key] : 1);
-                const impB = Math.abs(brand[b.key] - seg[b.key]) * (state.useWeighted ? state.weights[b.key] : 1);
+            const sorted = [...ATTRIBUTES].sort((a, b) => {
+                const impA = Math.abs(brand[a.key] - targetCoords[a.key]) * (state.useWeighted ? state.weights[a.key] : 1);
+                const impB = Math.abs(brand[b.key] - targetCoords[b.key]) * (state.useWeighted ? state.weights[b.key] : 1);
                 return impB - impA;
             });
 
@@ -601,247 +680,310 @@
             document.getElementById('axisZ').value = state.axisZ;
         }
 
-        // Авто-зсув на ±0.4 по 2 характеристиках з найбільшим Weighted Impact
-        function autoShiftTop2Weighted() {
-            const brand = brandsData.find(b => b.id === state.brandId);
-            const seg = segmentsData.find(s => s.id === state.segmentId);
-            if (!brand || !seg) return;
+        // Авто-зсув Топ-2 пріоритетів на ±0.4 до обраної цілі (P2 або P3 Forecast)
+        function autoShiftTop2() {
+            const brand = brandsP2.find(b => b.id === state.brandId);
+            const targetCoords = getActiveTargetCoords(state.segmentId);
+            if (!brand || !targetCoords) return;
 
-            // Повертаємось до факту перед застосуванням кроку на 1 період
-            DIMENSIONS.forEach(dim => {
-                state.simCoords[dim.key] = brand[dim.key];
+            ATTRIBUTES.forEach(attr => {
+                state.simCoords[attr.key] = brand[attr.key];
             });
 
-            const ranked = DIMENSIONS.map(dim => {
-                const diff = seg[dim.key] - brand[dim.key];
+            const ranked = ATTRIBUTES.map(attr => {
+                const diff = targetCoords[attr.key] - brand[attr.key];
                 const absDiff = Math.abs(diff);
-                const w = state.useWeighted ? state.weights[dim.key] : 1;
-                return { key: dim.key, label: dim.label, diff, absDiff, weightedImpact: absDiff * w };
-            }).sort((a, b) => b.weightedImpact - a.weightedImpact);
+                const w = state.useWeighted ? state.weights[attr.key] : 1;
+                return { key: attr.key, label: attr.label, diff, absDiff, impact: absDiff * w };
+            }).sort((a, b) => b.impact - a.impact);
 
             const top2 = ranked.slice(0, 2);
             top2.forEach(item => {
                 if (item.absDiff > 0) {
                     const step = Math.min(0.4, item.absDiff) * Math.sign(item.diff);
                     const nextVal = Math.max(1.0, Math.min(7.0, brand[item.key] + step));
-                    state.simCoords[item.key] = Number(nextVal.toFixed(1));
+                    state.simCoords[item.key] = Number(nextVal.toFixed(2));
                 }
             });
 
-            syncSlidersFromState();
+            syncSlidersUI();
             updateAll();
-            showToast(`Зсунуто ${top2[0].label} та ${top2[1].label} на ±0.4 до ідеалу ${seg.name}`);
+            showToast(`Зсунуто ${top2[0].label} та ${top2[1].label} на ±0.4 до цілі ${state.segmentId} (${state.targetMode})`);
         }
 
-        // Розрахунок базової (Unweighted) 6D-відстані
-        function calcUnweightedDistance(objA, objB) {
+        // Обчислення 6D-відстаней
+        function calcDistance(objA, objB, weighted) {
             let sumSq = 0;
-            DIMENSIONS.forEach(dim => {
-                const d = (objA[dim.key] || 0) - (objB[dim.key] || 0);
-                sumSq += d * d;
-            });
-            return Math.sqrt(sumSq);
-        }
-
-        // Розрахунок зваженої (Weighted) 6D-відстані: sqrt( sum( (w_i * (x_i - y_i))^2 ) )
-        function calcWeightedDistance(objA, objB) {
-            let sumSq = 0;
-            DIMENSIONS.forEach(dim => {
-                const w = state.weights[dim.key] || 0;
-                const d = (objA[dim.key] || 0) - (objB[dim.key] || 0);
+            ATTRIBUTES.forEach(attr => {
+                const w = weighted ? (state.weights[attr.key] || 0) : 1;
+                const d = (objA[attr.key] || 0) - (objB[attr.key] || 0);
                 sumSq += Math.pow(w * d, 2);
             });
             return Math.sqrt(sumSq);
         }
 
-        // Максимальна можлива відстань на шкалі [1..7] (дельта = 6 по кожній осі)
-        function getMaxDistance(isWeighted) {
-            if (!isWeighted) {
-                return Math.sqrt(6 * 36); // 14.6969
-            }
-            let sumSq = 0;
-            DIMENSIONS.forEach(dim => {
-                const w = state.weights[dim.key] || 0;
-                sumSq += Math.pow(w * 6, 2);
+        function calcSimilarityIndex(dist, weighted) {
+            let maxSq = 0;
+            ATTRIBUTES.forEach(attr => {
+                const w = weighted ? (state.weights[attr.key] || 0) : 1;
+                maxSq += Math.pow(w * 6, 2);
             });
-            return Math.sqrt(sumSq) || 1;
+            const maxD = Math.sqrt(maxSq) || 1;
+            return Math.max(0, Math.min(100, (1 - dist / maxD) * 100));
         }
 
-        function calcSimilarityIndex(dist, isWeighted) {
-            const maxD = getMaxDistance(isWeighted);
-            const idx = (1 - dist / maxD) * 100;
-            return Math.max(0, Math.min(100, idx));
-        }
-
-        // Головна функція оновлення всіх розрахунків та графіків
+        // Головна функція оновлення інтерфейсу
         function updateAll() {
             state.axisX = document.getElementById('axisX').value;
             state.axisY = document.getElementById('axisY').value;
             state.axisZ = document.getElementById('axisZ').value;
 
-            // Оновлення суми ваг та бейджів на слайдерах
-            const sumW = DIMENSIONS.reduce((acc, d) => acc + (state.weights[d.key] || 0), 0);
-            document.getElementById('totalWeightsSum').textContent = sumW.toFixed(1);
-            DIMENSIONS.forEach(dim => {
-                const tag = document.getElementById(`w_tag_${dim.key}`);
-                if (tag) tag.textContent = `W:${(state.weights[dim.key] || 0).toFixed(1)}`;
+            const sumW = ATTRIBUTES.reduce((acc, a) => acc + (state.weights[a.key] || 0), 0);
+            document.getElementById('weightsSumText').textContent = sumW.toFixed(1);
+            ATTRIBUTES.forEach(attr => {
+                const b = document.getElementById(`w_badge_${attr.key}`);
+                if (b) b.textContent = `W:${(state.weights[attr.key] || 0).toFixed(1)}`;
             });
 
-            const brand = brandsData.find(b => b.id === state.brandId);
-            const seg = segmentsData.find(s => s.id === state.segmentId);
-            if (!brand || !seg) return;
+            const brand = brandsP2.find(b => b.id === state.brandId);
+            const segForecastObj = getSegmentForecastP3(state.segmentId);
+            const targetCoords = state.targetMode === 'P3' ? segForecastObj.P3 : segForecastObj.P2;
+            const isModified = ATTRIBUTES.some(a => Math.abs(state.simCoords[a.key] - brand[a.key]) > 0.005);
 
-            const isModified = DIMENSIONS.some(dim => Math.abs(state.simCoords[dim.key] - brand[dim.key]) > 0.01);
-
-            // Обчислення метрик залежно від активного режиму (Weighted vs Unweighted)
-            const distFn = state.useWeighted ? calcWeightedDistance : calcUnweightedDistance;
-            const origDist = distFn(brand, seg);
-            const simDist = distFn(state.simCoords, seg);
+            // Метрики
+            const origDist = calcDistance(brand, targetCoords, state.useWeighted);
+            const simDist = calcDistance(state.simCoords, targetCoords, state.useWeighted);
             const deltaDist = simDist - origDist;
 
             const origIdx = calcSimilarityIndex(origDist, state.useWeighted);
             const simIdx = calcSimilarityIndex(simDist, state.useWeighted);
             const deltaIdx = simIdx - origIdx;
 
-            // Довідкова базова (Unweighted) відстань
-            const unWSimDist = calcUnweightedDistance(state.simCoords, seg);
-            const unWSimIdx = calcSimilarityIndex(unWSimDist, false);
-
-            document.getElementById('kpiModelTitle').textContent = state.useWeighted ? 'Зважені метрики (Weighted 6D)' : 'Базові метрики (Unweighted 6D)';
-            document.getElementById('distMetricLabel').textContent = state.useWeighted ? 'Weighted 6D Distance' : 'Unweighted 6D Distance';
-            document.getElementById('simMetricLabel').textContent = state.useWeighted ? 'Weighted Similarity Index' : 'Base Similarity Index';
-            document.getElementById('pairBadge').textContent = `${brand.name} → ${seg.name}`;
+            document.getElementById('kpiHeaderLabel').textContent = state.useWeighted ? 'Weighted 6D Metrics' : 'Unweighted 6D Metrics';
+            document.getElementById('kpiPairBadge').textContent = `${brand.name} → ${state.segmentId} (${state.targetMode})`;
 
             document.getElementById('kpiOrigDist').textContent = origDist.toFixed(2);
             document.getElementById('kpiSimDist').textContent = simDist.toFixed(2);
 
             const deltaDistEl = document.getElementById('kpiDeltaDist');
             deltaDistEl.textContent = (deltaDist > 0 ? '+' : '') + deltaDist.toFixed(2);
-            deltaDistEl.className = `text-xs font-semibold font-mono ${deltaDist < -0.01 ? 'text-emerald-400' : (deltaDist > 0.01 ? 'text-rose-400' : 'text-slate-400')}`;
+            deltaDistEl.className = `text-xs font-semibold font-mono ${deltaDist < -0.005 ? 'text-emerald-400' : (deltaDist > 0.005 ? 'text-rose-400' : 'text-slate-400')}`;
 
             document.getElementById('kpiSimIdx').textContent = simIdx.toFixed(1) + '%';
             const deltaIdxEl = document.getElementById('kpiDeltaIdx');
             deltaIdxEl.textContent = (deltaIdx > 0 ? '+' : '') + deltaIdx.toFixed(1) + '%';
-            deltaIdxEl.className = `text-xs font-semibold font-mono ${deltaIdx > 0.01 ? 'text-emerald-400' : (deltaIdx < -0.01 ? 'text-rose-400' : 'text-slate-400')}`;
+            deltaIdxEl.className = `text-xs font-semibold font-mono ${deltaIdx > 0.05 ? 'text-emerald-400' : (deltaIdx < -0.05 ? 'text-rose-400' : 'text-slate-400')}`;
 
-            document.getElementById('unweightedRefDist').textContent = `${unWSimDist.toFixed(2)} (Sim: ${unWSimIdx.toFixed(1)}%)`;
+            // Довідкове порівняння з іншим режимом (P2 vs P3)
+            const altCoords = state.targetMode === 'P3' ? segForecastObj.P2 : segForecastObj.P3;
+            const altLabel = state.targetMode === 'P3' ? 'P2 Actual Ideal' : 'P3 Forecast Ideal';
+            const altDist = calcDistance(state.simCoords, altCoords, state.useWeighted);
+            const altIdx = calcSimilarityIndex(altDist, state.useWeighted);
+            document.getElementById('p2ComparisonNote').textContent = `${altLabel}: ${altDist.toFixed(2)} (${altIdx.toFixed(1)}%)`;
 
-            // Оновлення блоку рекомендацій DECIDE
-            const rankedImpacts = renderDecideRecommendations(brand, seg);
-
-            // Оновлення таблиці рейтингу
-            renderRankingTable(brand, seg, isModified);
-
-            // Оновлення графіків
-            render3DCube(brand, seg, isModified);
-            renderRadarChart(brand, seg, isModified);
-            renderImpactBarChart(rankedImpacts);
+            // Оновлення всіх компонентів
+            renderDecideBlock(brand, targetCoords, segForecastObj);
+            renderTrendModule(brand, segForecastObj);
+            renderRankingTable(brand, targetCoords, isModified);
+            render3DCube(brand, segForecastObj, targetCoords, isModified);
+            renderRadarChart(brand, segForecastObj, isModified);
         }
 
-        // Розрахунок Weighted Impact = |Brand - Ideal| * Weight та вивід Топ-2 пріоритетів
-        function renderDecideRecommendations(brand, seg) {
-            const container = document.getElementById('decideCardsContainer');
-            container.innerHTML = '';
+        // Рекомендації DECIDE (Топ-2 Weighted Impact)
+        function renderDecideBlock(brand, targetCoords, segForecastObj) {
+            const grid = document.getElementById('decideCardsGrid');
+            grid.innerHTML = '';
 
-            const impacts = DIMENSIONS.map(dim => {
-                const cur = brand[dim.key];
-                const ideal = seg[dim.key];
+            document.getElementById('decideTargetModeText').textContent =
+                state.targetMode === 'P3' ? 'Орієнтир: Period 3 Forecast ★' : 'Орієнтир: Period 2 Actual';
+
+            const impacts = ATTRIBUTES.map(attr => {
+                const cur = brand[attr.key];
+                const ideal = targetCoords[attr.key];
                 const diff = ideal - cur;
                 const absDiff = Math.abs(diff);
-                const weight = state.weights[dim.key] || 0;
-                const weightedImpact = absDiff * weight;
+                const w = state.weights[attr.key] || 0;
+                const weightedImpact = absDiff * w;
                 const step = Math.min(0.4, absDiff) * Math.sign(diff);
-                const targetObj = Number(Math.max(1.0, Math.min(7.0, cur + step)).toFixed(1));
+                const recommendedObj = Number(Math.max(1.0, Math.min(7.0, cur + step)).toFixed(2));
 
-                return {
-                    ...dim,
-                    cur,
-                    ideal,
-                    diff,
-                    absDiff,
-                    weight,
-                    weightedImpact,
-                    targetObj
-                };
+                return { ...attr, cur, ideal, diff, absDiff, w, weightedImpact, recommendedObj };
             }).sort((a, b) => b.weightedImpact - a.weightedImpact);
 
             const top2 = impacts.slice(0, 2);
 
             top2.forEach((item, idx) => {
                 const isPrice = item.key === 'price';
-                const actionTag = isPrice
-                    ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Змінити ціну (Mix)</span>'
+                const badgeHtml = isPrice
+                    ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Ціна (Marketing Mix)</span>'
                     : '<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Perceptual Obj.</span>';
 
                 const card = document.createElement('div');
                 card.className = 'p-3 rounded-xl bg-slate-800/75 border border-slate-700/80 flex flex-col justify-between';
                 card.innerHTML = `
                     <div class="flex items-center justify-between gap-2 mb-1.5">
-                        <span class="text-xs font-bold text-white">${idx + 1}. ${item.label} <span class="text-[11px] font-mono text-slate-400">(W=${item.weight.toFixed(1)})</span></span>
-                        ${actionTag}
+                        <span class="text-xs font-bold text-white">${idx + 1}. ${item.label} <span class="text-[11px] font-mono text-slate-400">(W=${item.w.toFixed(1)})</span></span>
+                        ${badgeHtml}
                     </div>
                     <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
                         <span>Impact: <strong class="font-mono text-amber-300">${item.weightedImpact.toFixed(2)}</strong></span>
-                        <span>Δ: <strong class="font-mono text-slate-200">${item.diff >= 0 ? '+' : ''}${item.diff.toFixed(1)}</strong></span>
+                        <span>Δ: <strong class="font-mono text-slate-200">${item.diff >= 0 ? '+' : ''}${item.diff.toFixed(2)}</strong></span>
                     </div>
                     <div class="flex items-center justify-between text-xs pt-1.5 border-t border-slate-700/60">
-                        <span class="text-slate-400">Факт: <strong class="font-mono text-white">${item.cur.toFixed(1)}</strong> → Ідеал: <strong class="font-mono text-white">${item.ideal.toFixed(1)}</strong></span>
-                        <span class="text-emerald-400 font-bold font-mono">Ціль: ${item.targetObj.toFixed(1)}</span>
+                        <span class="text-slate-400">P2: <strong class="font-mono text-white">${item.cur.toFixed(2)}</strong> → ${state.targetMode}: <strong class="font-mono text-white">${item.ideal.toFixed(2)}</strong></span>
+                        <span class="text-emerald-400 font-bold font-mono">Ціль: ${item.recommendedObj.toFixed(2)}</span>
                     </div>
                 `;
-                container.appendChild(card);
+                grid.appendChild(card);
             });
 
-            // Динамічна підказка про Price vs Perceptual Objectives
             const nonPriceTop2 = impacts.filter(i => i.key !== 'price').slice(0, 2);
-            const hasPriceInTop2 = top2.some(i => i.key === 'price');
-            const noticeEl = document.getElementById('priceNoticeText');
+            const hasPrice = top2.some(i => i.key === 'price');
+            const adviceEl = document.getElementById('decideAdviceText');
 
-            if (hasPriceInTop2) {
-                noticeEl.innerHTML = `<strong>Порада для DECIDE:</strong> <strong>Price</strong> входить у Топ-2 за впливом, але в симуляції вісь Price найкраще рухати прямою зміною ціни в <em>Marketing Mix</em>. Для полів <em>Perceptual Objectives</em> (де дозволено до 2 нецінових шкал) оберіть <strong>${nonPriceTop2[0].label}</strong> (ціль ${nonPriceTop2[0].targetObj.toFixed(1)}) та <strong>${nonPriceTop2[1].label}</strong> (ціль ${nonPriceTop2[1].targetObj.toFixed(1)}).`;
+            if (hasPrice) {
+                adviceEl.innerHTML = `<strong>Стратегія для DECIDE:</strong> Вісь <strong>Price</strong> входить у Топ-2 за впливом — коригуйте її прямою зміною ціни в <em>Marketing Mix</em>. Для полів <em>Perceptual Objectives</em> (до 2 нецінових шкал) впишіть <strong>${nonPriceTop2[0].label}</strong> (ціль <strong>${nonPriceTop2[0].recommendedObj.toFixed(2)}</strong>) та <strong>${nonPriceTop2[1].label}</strong> (ціль <strong>${nonPriceTop2[1].recommendedObj.toFixed(2)}</strong>).`;
             } else {
-                noticeEl.innerHTML = `<strong>Порада для DECIDE:</strong> Обидва пріоритети (<strong>${top2[0].label}</strong> та <strong>${top2[1].label}</strong>) є неціновими атрибутами — сміливо вносьте їх безпосередньо в <em>Perceptual Objectives</em> із цілями <strong>${top2[0].targetObj.toFixed(1)}</strong> та <strong>${top2[1].targetObj.toFixed(1)}</strong>.`;
+                adviceEl.innerHTML = `<strong>Стратегія для DECIDE:</strong> Обидва пріоритети нецінові — вносьте у <em>Perceptual Objectives</em>: <strong>${top2[0].label}</strong> (ціль <strong>${top2[0].recommendedObj.toFixed(2)}</strong>) та <strong>${top2[1].label}</strong> (ціль <strong>${top2[1].recommendedObj.toFixed(2)}</strong>).`;
             }
 
-            // Формування звіту для буфера обміну
-            lastDecideReportText = `MARKSTRAT DECIDE — WEIGHTED SEMANTIC ANALYSIS\n` +
-                `Бренд: ${brand.name} | Цільовий сегмент: ${seg.name}\n` +
-                `Weighted 6D Distance: ${calcWeightedDistance(brand, seg).toFixed(2)} (Similarity: ${calcSimilarityIndex(calcWeightedDistance(brand, seg), true).toFixed(1)}%)\n\n` +
+            // Звіт для копіювання
+            lastReportText = `MARKSTRAT DECIDE — 6D SEMANTIC & P3 TREND FORECAST\n` +
+                `Бренд: ${brand.name} (Period 2) | Цільовий сегмент: ${state.segmentId} (Орієнтир: ${state.targetMode})\n` +
+                `Weighted 6D Distance: ${calcDistance(brand, targetCoords, true).toFixed(2)} (Similarity: ${calcSimilarityIndex(calcDistance(brand, targetCoords, true), true).toFixed(1)}%)\n\n` +
                 `ТОП-2 ЗА ЗВАЖЕНИМ ВПЛИВОМ (|Δ| × Weight):\n` +
-                top2.map((t, i) => `${i + 1}) ${t.label} (W=${t.weight.toFixed(1)}): Impact = ${t.weightedImpact.toFixed(2)} | Факт ${t.cur.toFixed(1)} -> Ціль ${t.targetObj.toFixed(1)} (Ідеал: ${t.ideal.toFixed(1)})`).join('\n') +
-                `\n\nРекомендація для Perceptual Objectives (нецінові осі): ${nonPriceTop2[0].label} (${nonPriceTop2[0].targetObj.toFixed(1)}) та ${nonPriceTop2[1].label} (${nonPriceTop2[1].targetObj.toFixed(1)}).`;
-
-            return impacts;
+                top2.map((t, i) => `${i + 1}) ${t.label} (W=${t.w.toFixed(1)}): Impact = ${t.weightedImpact.toFixed(2)} | P2=${t.cur.toFixed(2)} -> ${state.targetMode}=${t.ideal.toFixed(2)} | Крок DECIDE: ${t.recommendedObj.toFixed(2)}`).join('\n') +
+                `\n\nРекомендовані Perceptual Objectives (нецінові): ${nonPriceTop2[0].label} (${nonPriceTop2[0].recommendedObj.toFixed(2)}) та ${nonPriceTop2[1].label} (${nonPriceTop2[1].recommendedObj.toFixed(2)}).`;
         }
 
-        // Таблиця конкурентного рейтингу
-        function renderRankingTable(activeBrand, seg, isModified) {
-            document.getElementById('tableSegmentName').textContent = seg.name;
+        // Модуль еволюції та прогнозу (Таблиця + Chart.js лінійний графік)
+        function renderTrendModule(brand, segObj) {
+            document.getElementById('trendSegmentTitle').textContent = state.segmentId;
+            const tbody = document.getElementById('trendTableBody');
+            tbody.innerHTML = '';
+
+            ATTRIBUTES.forEach(attr => {
+                const v0 = segObj.P0[attr.key];
+                const v1 = segObj.P1[attr.key];
+                const v2 = segObj.P2[attr.key];
+                const v3 = segObj.P3[attr.key];
+                const step = segObj.steps[attr.key];
+                const brandCur = state.simCoords[attr.key];
+                const gapToP3 = v3 - brandCur;
+
+                let stepColor = 'text-slate-400';
+                let arrow = '→';
+                if (step > 0.005) { stepColor = 'text-emerald-400'; arrow = '↗'; }
+                else if (step < -0.005) { stepColor = 'text-rose-400'; arrow = '↘'; }
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-800/35';
+                tr.innerHTML = `
+                    <td class="py-2 pr-2 font-semibold text-slate-200 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${attr.color}"></span>
+                        ${attr.short}
+                        <span class="text-[10px] font-mono text-slate-500">(${state.weights[attr.key].toFixed(1)})</span>
+                    </td>
+                    <td class="py-2 px-2 text-right font-mono text-slate-400">${v0.toFixed(2)}</td>
+                    <td class="py-2 px-2 text-right font-mono text-slate-400">${v1.toFixed(2)}</td>
+                    <td class="py-2 px-2 text-right font-mono font-bold text-white">${v2.toFixed(2)}</td>
+                    <td class="py-2 px-2 text-right font-mono ${stepColor}">${arrow} ${step >= 0 ? '+' : ''}${step.toFixed(3)}</td>
+                    <td class="py-2 px-2 text-right font-mono font-bold text-amber-400 bg-amber-500/5">${v3.toFixed(2)}</td>
+                    <td class="py-2 pl-2 text-right font-mono font-semibold ${Math.abs(gapToP3) > 1.0 ? 'text-rose-400' : 'text-cyan-300'}">
+                        ${gapToP3 >= 0 ? '+' : ''}${gapToP3.toFixed(2)}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Оновлення Chart.js
+            if (trendChartInstance) {
+                trendChartInstance.data.datasets = ATTRIBUTES.map(attr => ({
+                    label: attr.short,
+                    data: [
+                        segObj.P0[attr.key],
+                        segObj.P1[attr.key],
+                        segObj.P2[attr.key],
+                        segObj.P3[attr.key]
+                    ],
+                    borderColor: attr.color,
+                    backgroundColor: attr.color,
+                    borderWidth: 2,
+                    pointRadius: 3.5,
+                    pointHoverRadius: 5,
+                    tension: 0.25,
+                    segment: {
+                        // Пунктир для прогнозованого відрізка P2 -> P3
+                        borderDash: ctx => ctx.p0DataIndex === 2 ? [5, 4] : undefined
+                    }
+                }));
+                trendChartInstance.update();
+            }
+        }
+
+        function initTrendChart() {
+            const ctx = document.getElementById('trendLineChart').getContext('2d');
+            trendChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Period 0', 'Period 1', 'Period 2', 'P3 Forecast'],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: {
+                            min: 1,
+                            max: 7,
+                            grid: { color: 'rgba(148, 163, 184, 0.12)' },
+                            ticks: { color: '#94a3b8', font: { size: 10, family: 'JetBrains Mono' }, stepSize: 1 }
+                        },
+                        x: {
+                            grid: { color: 'rgba(148, 163, 184, 0.08)' },
+                            ticks: { color: '#cbd5e1', font: { size: 10, family: 'Inter', weight: '600' } }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#cbd5e1', boxWidth: 8, padding: 8, font: { size: 10, family: 'Inter' } }
+                        },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            borderColor: '#334155',
+                            borderWidth: 1,
+                            titleFont: { family: 'Inter', size: 11 },
+                            bodyFont: { family: 'JetBrains Mono', size: 11 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Конкурентний рейтинг
+        function renderRankingTable(activeBrand, targetCoords, isModified) {
+            document.getElementById('rankingSegLabel').textContent =
+                `${state.segmentId} (${state.targetMode === 'P3' ? 'P3 Forecast' : 'P2 Actual'})`;
+
             const tbody = document.getElementById('rankingTableBody');
             tbody.innerHTML = '';
 
-            const list = brandsData.map(b => {
+            const list = brandsP2.map(b => {
                 const coords = (b.id === activeBrand.id && isModified) ? state.simCoords : b;
-                const wDist = calcWeightedDistance(coords, seg);
-                const uDist = calcUnweightedDistance(coords, seg);
+                const wDist = calcDistance(coords, targetCoords, true);
+                const uDist = calcDistance(coords, targetCoords, false);
                 const activeDist = state.useWeighted ? wDist : uDist;
                 const simIdx = calcSimilarityIndex(activeDist, state.useWeighted);
 
-                return {
-                    ...b,
-                    c: coords,
-                    wDist,
-                    uDist,
-                    activeDist,
-                    simIdx,
-                    isActive: b.id === activeBrand.id
-                };
+                return { ...b, c: coords, wDist, uDist, activeDist, simIdx, isActive: b.id === activeBrand.id };
             }).sort((a, b) => a.activeDist - b.activeDist);
 
-            const rank = list.findIndex(item => item.isActive) + 1;
-            document.getElementById('kpiRank').textContent = `#${rank} з ${list.length}`;
+            const rank = list.findIndex(i => i.isActive) + 1;
+            document.getElementById('kpiRankText').textContent = `#${rank} з ${list.length}`;
 
-            list.forEach((item, index) => {
+            list.forEach((item, idx) => {
                 const c = item.c;
                 const tr = document.createElement('tr');
                 if (item.isActive) {
@@ -853,18 +995,18 @@
                 }
 
                 tr.innerHTML = `
-                    <td class="py-2.5 pr-2 text-slate-400 font-mono">${index + 1}</td>
+                    <td class="py-2.5 pr-2 text-slate-400 font-mono">${idx + 1}</td>
                     <td class="py-2.5 px-2">
                         <span class="font-bold">${item.name}</span>
-                        ${item.isActive && isModified ? '<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">План</span>' : ''}
+                        ${item.isActive && isModified ? '<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">План</span>' : ''}
                         <span class="ml-1 text-[10px] px-1.5 py-0.5 rounded ${item.isOurs ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-800 text-slate-400'}">${item.firm}</span>
                     </td>
-                    <td class="py-2.5 px-2 text-right font-mono">${c.price.toFixed(1)}</td>
-                    <td class="py-2.5 px-2 text-right font-mono">${c.procPower.toFixed(1)}</td>
-                    <td class="py-2.5 px-2 text-right font-mono">${c.display.toFixed(1)}</td>
-                    <td class="py-2.5 px-2 text-right font-mono">${c.design.toFixed(1)}</td>
-                    <td class="py-2.5 px-2 text-right font-mono">${c.battery.toFixed(1)}</td>
-                    <td class="py-2.5 px-2 text-right font-mono">${c.features.toFixed(1)}</td>
+                    <td class="py-2.5 px-2 text-right font-mono">${c.price.toFixed(2)}</td>
+                    <td class="py-2.5 px-2 text-right font-mono">${c.procPower.toFixed(2)}</td>
+                    <td class="py-2.5 px-2 text-right font-mono">${c.display.toFixed(2)}</td>
+                    <td class="py-2.5 px-2 text-right font-mono">${c.design.toFixed(2)}</td>
+                    <td class="py-2.5 px-2 text-right font-mono">${c.battery.toFixed(2)}</td>
+                    <td class="py-2.5 px-2 text-right font-mono">${c.features.toFixed(2)}</td>
                     <td class="py-2.5 px-2 text-right font-mono text-slate-400">${item.uDist.toFixed(2)}</td>
                     <td class="py-2.5 px-2 text-right font-mono font-bold text-white">${item.wDist.toFixed(2)}</td>
                     <td class="py-2.5 pl-2 text-right font-mono font-bold text-emerald-400">${item.simIdx.toFixed(1)}%</td>
@@ -873,18 +1015,18 @@
             });
         }
 
-        // 3D Scatter Plot (Plotly)
-        function render3DCube(activeBrand, targetSeg, isModified) {
-            const dimX = DIMENSIONS.find(d => d.key === state.axisX);
-            const dimY = DIMENSIONS.find(d => d.key === state.axisY);
-            const dimZ = DIMENSIONS.find(d => d.key === state.axisZ);
+        // 3D-Проєкція із траєкторією сегмента P0 -> P1 -> P2 -> P3 Forecast
+        function render3DCube(activeBrand, segObj, targetCoords, isModified) {
+            const dimX = ATTRIBUTES.find(a => a.key === state.axisX);
+            const dimY = ATTRIBUTES.find(a => a.key === state.axisY);
+            const dimZ = ATTRIBUTES.find(a => a.key === state.axisZ);
 
-            document.getElementById('cubeAxesSubtitle').textContent = `Осі: ${dimX.label} (X) × ${dimY.label} (Y) × ${dimZ.label} (Z)`;
+            document.getElementById('cubeSubtitle').textContent = `Осі: ${dimX.label} (X) × ${dimY.label} (Y) × ${dimZ.label} (Z)`;
 
             const traces = [];
 
             // 1. Наші бренди Magnetix
-            const ourBrands = brandsData.filter(b => b.isOurs);
+            const ourBrands = brandsP2.filter(b => b.isOurs);
             traces.push({
                 type: 'scatter3d',
                 mode: 'markers+text',
@@ -895,102 +1037,67 @@
                 text: ourBrands.map(b => b.name),
                 textposition: 'top center',
                 textfont: { size: 12, color: '#22d3ee', family: 'Inter, sans-serif' },
-                marker: {
-                    size: 10,
-                    color: '#06b6d4',
-                    symbol: 'circle',
-                    line: { color: '#ffffff', width: 2 }
-                },
-                hovertemplate: `<b>%{text} (Magnetix)</b><br>${dimX.short}: %{x}<br>${dimY.short}: %{y}<br>${dimZ.short}: %{z}<extra></extra>`
+                marker: { size: 10, color: '#06b6d4', line: { color: '#ffffff', width: 2 } },
+                hovertemplate: `<b>%{text} (Magnetix P2)</b><br>${dimX.short}: %{x}<br>${dimY.short}: %{y}<br>${dimZ.short}: %{z}<extra></extra>`
             });
 
             // 2. Конкуренти
-            const comps = brandsData.filter(b => !b.isOurs);
+            const comps = brandsP2.filter(b => !b.isOurs);
             traces.push({
                 type: 'scatter3d',
                 mode: 'markers+text',
-                name: 'Конкуренти',
+                name: 'Конкуренти (P2)',
                 x: comps.map(b => b[dimX.key]),
                 y: comps.map(b => b[dimY.key]),
                 z: comps.map(b => b[dimZ.key]),
-                text: comps.map(b => `${b.name} (${b.firm})`),
+                text: comps.map(b => `${b.name}`),
                 textposition: 'top center',
                 textfont: { size: 10, color: '#94a3b8' },
+                marker: { size: 6.5, color: '#64748b', opacity: 0.8 },
+                hovertemplate: `<b>%{text}</b><br>${dimX.short}: %{x}<br>${dimY.short}: %{y}<br>${dimZ.short}: %{z}<extra></extra>`
+            });
+
+            // 3. Історична траєкторія сегмента P0 -> P1 -> P2 -> P3 Forecast
+            traces.push({
+                type: 'scatter3d',
+                mode: 'lines+markers+text',
+                name: `Траєкторія ${state.segmentId} (P0→P3)`,
+                x: [segObj.P0[dimX.key], segObj.P1[dimX.key], segObj.P2[dimX.key], segObj.P3[dimX.key]],
+                y: [segObj.P0[dimY.key], segObj.P1[dimY.key], segObj.P2[dimY.key], segObj.P3[dimY.key]],
+                z: [segObj.P0[dimZ.key], segObj.P1[dimZ.key], segObj.P2[dimZ.key], segObj.P3[dimZ.key]],
+                text: ['P0', 'P1', `${state.segmentId} (P2)`, `★ ${state.segmentId} (P3)`],
+                textposition: 'bottom center',
+                textfont: { size: 10, color: '#fbbf24' },
+                line: { color: '#f59e0b', width: 4 },
                 marker: {
-                    size: 7,
-                    color: '#64748b',
-                    opacity: 0.85,
-                    symbol: 'circle'
+                    size: [5, 6, 9, 12],
+                    color: ['#78350f', '#b45309', '#10b981', '#f59e0b'],
+                    symbol: ['circle', 'circle', 'diamond', 'diamond'],
+                    line: { color: '#ffffff', width: 1.5 }
                 },
                 hovertemplate: `<b>%{text}</b><br>${dimX.short}: %{x}<br>${dimY.short}: %{y}<br>${dimZ.short}: %{z}<extra></extra>`
             });
 
-            // 3. Інші сегменти
-            const otherSegs = segmentsData.filter(s => s.id !== targetSeg.id);
-            traces.push({
-                type: 'scatter3d',
-                mode: 'markers+text',
-                name: 'Інші сегменти',
-                x: otherSegs.map(s => s[dimX.key]),
-                y: otherSegs.map(s => s[dimY.key]),
-                z: otherSegs.map(s => s[dimZ.key]),
-                text: otherSegs.map(s => s.name),
-                textposition: 'bottom center',
-                textfont: { size: 10, color: '#34d399' },
-                marker: {
-                    size: 7,
-                    color: '#10b981',
-                    symbol: 'diamond',
-                    opacity: 0.75
-                },
-                hovertemplate: `<b>Сегмент: %{text}</b><br>${dimX.short}: %{x}<br>${dimY.short}: %{y}<br>${dimZ.short}: %{z}<extra></extra>`
-            });
-
-            // 4. Цільовий сегмент
-            traces.push({
-                type: 'scatter3d',
-                mode: 'markers+text',
-                name: `Ідеал: ${targetSeg.name}`,
-                x: [targetSeg[dimX.key]],
-                y: [targetSeg[dimY.key]],
-                z: [targetSeg[dimZ.key]],
-                text: [`★ ${targetSeg.name}`],
-                textposition: 'bottom center',
-                textfont: { size: 12, color: '#fbbf24' },
-                marker: {
-                    size: 12,
-                    color: '#f59e0b',
-                    symbol: 'diamond',
-                    line: { color: '#ffffff', width: 2 }
-                },
-                hovertemplate: `<b>Цільовий ідеал: ${targetSeg.name}</b><br>${dimX.short}: %{x}<br>${dimY.short}: %{y}<br>${dimZ.short}: %{z}<extra></extra>`
-            });
-
-            // 5. Симульована точка (Ghost point)
+            // 4. Симульована точка (якщо є зсув)
             if (isModified) {
                 traces.push({
                     type: 'scatter3d',
                     mode: 'markers+text',
-                    name: `${activeBrand.name} (План)`,
+                    name: `${activeBrand.name} (План P3)`,
                     x: [state.simCoords[dimX.key]],
                     y: [state.simCoords[dimY.key]],
                     z: [state.simCoords[dimZ.key]],
                     text: [`${activeBrand.name} (План)`],
                     textposition: 'top center',
                     textfont: { size: 12, color: '#f43f5e' },
-                    marker: {
-                        size: 10,
-                        color: '#f43f5e',
-                        symbol: 'cross',
-                        line: { color: '#ffffff', width: 2 }
-                    },
+                    marker: { size: 10, color: '#f43f5e', symbol: 'cross', line: { color: '#ffffff', width: 2 } },
                     hovertemplate: `<b>${activeBrand.name} (Симуляція)</b><br>${dimX.short}: %{x}<br>${dimY.short}: %{y}<br>${dimZ.short}: %{z}<extra></extra>`
                 });
 
                 traces.push({
                     type: 'scatter3d',
                     mode: 'lines',
-                    name: 'Вектор зсуву',
+                    name: 'Рекламний зсув',
                     x: [activeBrand[dimX.key], state.simCoords[dimX.key]],
                     y: [activeBrand[dimY.key], state.simCoords[dimY.key]],
                     z: [activeBrand[dimZ.key], state.simCoords[dimZ.key]],
@@ -999,16 +1106,16 @@
                 });
             }
 
-            // 6. Пунктирний вектор до ідеалу сегмента
-            const startCoords = isModified ? state.simCoords : activeBrand;
+            // 5. Пунктирна лінія від точки бренду до обраної цілі (P2 або P3)
+            const startPt = isModified ? state.simCoords : activeBrand;
             traces.push({
                 type: 'scatter3d',
                 mode: 'lines',
-                name: 'Відстань до ідеалу',
-                x: [startCoords[dimX.key], targetSeg[dimX.key]],
-                y: [startCoords[dimY.key], targetSeg[dimY.key]],
-                z: [startCoords[dimZ.key], targetSeg[dimZ.key]],
-                line: { color: '#fbbf24', width: 3, dash: 'dash' },
+                name: `Вектор до ${state.targetMode}`,
+                x: [startPt[dimX.key], targetCoords[dimX.key]],
+                y: [startPt[dimY.key], targetCoords[dimY.key]],
+                z: [startPt[dimZ.key], targetCoords[dimZ.key]],
+                line: { color: '#22d3ee', width: 3, dash: 'dash' },
                 hoverinfo: 'none'
             });
 
@@ -1020,15 +1127,15 @@
                 legend: {
                     x: 0.01,
                     y: 0.99,
-                    bgcolor: 'rgba(15, 23, 42, 0.75)',
+                    bgcolor: 'rgba(15, 23, 42, 0.78)',
                     bordercolor: '#1e293b',
                     borderwidth: 1,
                     font: { size: 10 }
                 },
                 scene: {
-                    xaxis: { title: dimX.label, range: [1, 7], dtick: 1, gridcolor: '#1e293b', zerolinecolor: '#475569', backgroundcolor: '#0f172a' },
-                    yaxis: { title: dimY.label, range: [1, 7], dtick: 1, gridcolor: '#1e293b', zerolinecolor: '#475569', backgroundcolor: '#0f172a' },
-                    zaxis: { title: dimZ.label, range: [1, 7], dtick: 1, gridcolor: '#1e293b', zerolinecolor: '#475569', backgroundcolor: '#0f172a' },
+                    xaxis: { title: dimX.short, range: [1, 7], dtick: 1, gridcolor: '#1e293b', zerolinecolor: '#475569', backgroundcolor: '#0f172a' },
+                    yaxis: { title: dimY.short, range: [1, 7], dtick: 1, gridcolor: '#1e293b', zerolinecolor: '#475569', backgroundcolor: '#0f172a' },
+                    zaxis: { title: dimZ.short, range: [1, 7], dtick: 1, gridcolor: '#1e293b', zerolinecolor: '#475569', backgroundcolor: '#0f172a' },
                     camera: { eye: { x: 1.55, y: 1.55, z: 1.15 } }
                 }
             };
@@ -1036,50 +1143,60 @@
             Plotly.react('semantic3dPlot', traces, layout, { responsive: true, displayModeBar: true });
         }
 
-        // 6-осьовий Radar Chart
-        function renderRadarChart(activeBrand, targetSeg, isModified) {
-            const thetaLabels = [...DIMENSIONS.map(d => d.short), DIMENSIONS[0].short];
-            const brandVals = [...DIMENSIONS.map(d => activeBrand[d.key]), activeBrand[DIMENSIONS[0].key]];
-            const segVals = [...DIMENSIONS.map(d => targetSeg[d.key]), targetSeg[DIMENSIONS[0].key]];
+        // 6-осьовий Radar Chart (Brand P2 vs Ideal P2 vs Forecast P3)
+        function renderRadarChart(activeBrand, segObj, isModified) {
+            const theta = [...ATTRIBUTES.map(a => a.short), ATTRIBUTES[0].short];
+            const brandR = [...ATTRIBUTES.map(a => activeBrand[a.key]), activeBrand[ATTRIBUTES[0].key]];
+            const p2R = [...ATTRIBUTES.map(a => segObj.P2[a.key]), segObj.P2[ATTRIBUTES[0].key]];
+            const p3R = [...ATTRIBUTES.map(a => segObj.P3[a.key]), segObj.P3[ATTRIBUTES[0].key]];
 
             const traces = [
                 {
                     type: 'scatterpolar',
-                    r: segVals,
-                    theta: thetaLabels,
+                    r: p3R,
+                    theta: theta,
                     fill: 'toself',
-                    fillcolor: 'rgba(245, 158, 11, 0.14)',
-                    line: { color: '#f59e0b', width: 2 },
+                    fillcolor: 'rgba(245, 158, 11, 0.12)',
+                    line: { color: '#f59e0b', width: 2, dash: 'dash' },
                     marker: { size: 5, color: '#f59e0b' },
-                    name: `Ідеал: ${targetSeg.name}`
+                    name: `${state.segmentId} (P3 Прогноз)`
                 },
                 {
                     type: 'scatterpolar',
-                    r: brandVals,
-                    theta: thetaLabels,
+                    r: p2R,
+                    theta: theta,
+                    fill: 'none',
+                    line: { color: '#10b981', width: 2 },
+                    marker: { size: 4, color: '#10b981' },
+                    name: `${state.segmentId} (P2 Факт)`
+                },
+                {
+                    type: 'scatterpolar',
+                    r: brandR,
+                    theta: theta,
                     fill: 'toself',
                     fillcolor: 'rgba(6, 182, 212, 0.22)',
-                    line: { color: '#06b6d4', width: 2 },
+                    line: { color: '#06b6d4', width: 2.5 },
                     marker: { size: 5, color: '#06b6d4' },
-                    name: `${activeBrand.name} (Факт)`
+                    name: `${activeBrand.name} (P2)`
                 }
             ];
 
             if (isModified) {
-                const simVals = [...DIMENSIONS.map(d => state.simCoords[d.key]), state.simCoords[DIMENSIONS[0].key]];
+                const simR = [...ATTRIBUTES.map(a => state.simCoords[a.key]), state.simCoords[ATTRIBUTES[0].key]];
                 traces.push({
                     type: 'scatterpolar',
-                    r: simVals,
-                    theta: thetaLabels,
+                    r: simR,
+                    theta: theta,
                     fill: 'none',
-                    line: { color: '#f43f5e', width: 2, dash: 'dot' },
+                    line: { color: '#f43f5e', width: 2.5, dash: 'dot' },
                     marker: { size: 5, color: '#f43f5e' },
                     name: `${activeBrand.name} (План)`
                 });
             }
 
             const layout = {
-                margin: { l: 42, r: 42, t: 18, b: 36 },
+                margin: { l: 42, r: 42, t: 20, b: 48 },
                 paper_bgcolor: '#0f172a',
                 plot_bgcolor: '#0f172a',
                 font: { family: 'Inter, sans-serif', color: '#cbd5e1', size: 10 },
@@ -1103,122 +1220,53 @@
                     orientation: 'h',
                     x: 0.5,
                     xanchor: 'center',
-                    y: -0.15,
-                    font: { size: 9 }
+                    y: -0.18,
+                    font: { size: 9.5 }
                 }
             };
 
             Plotly.react('radarPlot', traces, layout, { responsive: true, displayModeBar: false });
         }
 
-        // Горизонтальний бар-чарт Weighted Impact (поточний симульований розрив × вага)
-        function renderImpactBarChart(rankedImpacts) {
-            const seg = segmentsData.find(s => s.id === state.segmentId);
-            const currentImpacts = DIMENSIONS.map(dim => {
-                const simVal = state.simCoords[dim.key];
-                const idealVal = seg[dim.key];
-                const w = state.useWeighted ? (state.weights[dim.key] || 0) : 1;
-                const imp = Math.abs(simVal - idealVal) * w;
-                return { label: dim.short, imp, color: dim.color };
-            }).sort((a, b) => a.imp - b.imp); // зростання для коректного відображення знизу вгору
-
-            const trace = {
-                type: 'bar',
-                orientation: 'h',
-                x: currentImpacts.map(i => Number(i.imp.toFixed(2))),
-                y: currentImpacts.map(i => i.label),
-                text: currentImpacts.map(i => i.imp.toFixed(2)),
-                textposition: 'auto',
-                marker: {
-                    color: currentImpacts.map(i => i.color),
-                    opacity: 0.9
-                },
-                hovertemplate: '<b>%{y}</b><br>Weighted Impact: %{x:.2f}<extra></extra>'
-            };
-
-            const layout = {
-                margin: { l: 75, r: 18, t: 6, b: 24 },
-                paper_bgcolor: '#0f172a',
-                plot_bgcolor: '#0f172a',
-                font: { family: 'JetBrains Mono, monospace', color: '#cbd5e1', size: 10 },
-                xaxis: {
-                    gridcolor: '#1e293b',
-                    zerolinecolor: '#334155',
-                    tickfont: { size: 9 }
-                },
-                yaxis: {
-                    gridcolor: 'transparent',
-                    tickfont: { family: 'Inter, sans-serif', size: 10, color: '#e2e8f0' }
-                }
-            };
-
-            Plotly.react('impactBarPlot', [trace], layout, { responsive: true, displayModeBar: false });
-        }
-
-        // Модальне вікно редагування координат
-        function openCoordsModal() {
-            const bBody = document.getElementById('modalBrandsBody');
-            bBody.innerHTML = '';
-            brandsData.forEach((b, idx) => {
-                bBody.innerHTML += `
+        // Модальне вікно редагування даних брендів
+        function openDataModal() {
+            const tbody = document.getElementById('modalBrandsBody');
+            tbody.innerHTML = '';
+            brandsP2.forEach((b, idx) => {
+                tbody.innerHTML += `
                     <tr>
                         <td class="py-1.5 font-bold text-white">${b.name} <span class="text-slate-400 font-normal">(${b.firm})</span></td>
-                        ${DIMENSIONS.map(d => `
+                        ${ATTRIBUTES.map(a => `
                             <td class="py-1.5 text-center">
-                                <input type="number" id="mb_${d.key}_${idx}" value="${b[d.key]}" min="1" max="7" step="0.1"
-                                    class="w-14 text-center font-mono rounded bg-slate-800 border border-slate-700 py-1 text-white">
+                                <input type="number" id="mb_${a.key}_${idx}" value="${b[a.key].toFixed(2)}" min="1" max="7" step="0.01"
+                                    class="w-16 text-center font-mono rounded bg-slate-800 border border-slate-700 py-1 text-white">
                             </td>
                         `).join('')}
                     </tr>
                 `;
             });
-
-            const sBody = document.getElementById('modalSegmentsBody');
-            sBody.innerHTML = '';
-            segmentsData.forEach((s, idx) => {
-                sBody.innerHTML += `
-                    <tr>
-                        <td class="py-1.5 font-bold text-white">${s.name}</td>
-                        ${DIMENSIONS.map(d => `
-                            <td class="py-1.5 text-center">
-                                <input type="number" id="ms_${d.key}_${idx}" value="${s[d.key]}" min="1" max="7" step="0.1"
-                                    class="w-14 text-center font-mono rounded bg-slate-800 border border-slate-700 py-1 text-white">
-                            </td>
-                        `).join('')}
-                    </tr>
-                `;
-            });
-
-            document.getElementById('coordsModal').classList.remove('hidden');
+            document.getElementById('dataModal').classList.remove('hidden');
         }
 
-        function closeCoordsModal() {
-            document.getElementById('coordsModal').classList.add('hidden');
+        function closeDataModal() {
+            document.getElementById('dataModal').classList.add('hidden');
         }
 
-        function saveModalCoords() {
-            brandsData.forEach((b, idx) => {
-                DIMENSIONS.forEach(d => {
-                    const val = parseFloat(document.getElementById(`mb_${d.key}_${idx}`).value);
-                    b[d.key] = isNaN(val) ? b[d.key] : Math.max(1, Math.min(7, val));
+        function saveModalData() {
+            brandsP2.forEach((b, idx) => {
+                ATTRIBUTES.forEach(a => {
+                    const val = parseFloat(document.getElementById(`mb_${a.key}_${idx}`).value);
+                    b[a.key] = isNaN(val) ? b[a.key] : Math.max(1, Math.min(7, val));
                 });
             });
-
-            segmentsData.forEach((s, idx) => {
-                DIMENSIONS.forEach(d => {
-                    const val = parseFloat(document.getElementById(`ms_${d.key}_${idx}`).value);
-                    s[d.key] = isNaN(val) ? s[d.key] : Math.max(1, Math.min(7, val));
-                });
-            });
-
-            closeCoordsModal();
-            onBrandOrSegmentChange(false);
-            showToast('Координати брендів і сегментів оновлено!');
+            closeDataModal();
+            onSelectionChange(false);
+            showToast('Координати брендів оновлено!');
         }
 
-        function copyDecideSummary() {
+        function copyDecideReport() {
             const textArea = document.createElement('textarea');
-            textArea.value = lastDecideReportText;
+            textArea.value = lastReportText;
             document.body.appendChild(textArea);
             textArea.select();
             document.execCommand('copy');
