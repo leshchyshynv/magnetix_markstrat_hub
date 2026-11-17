@@ -164,8 +164,8 @@
                             <option value="Gen-Z">Gen-Z</option>
                             <option value="Millennials">Millennials</option>
                             <option value="Gen-X">Gen-X</option>
-                            <option value="Baby Boomer">Baby Boomer</option>
                             <option value="Professionals">Professionals</option>
+                            <option value="Baby Boomers">Baby Boomers</option>
                         </select>
                     </div>
                 </div>
@@ -217,7 +217,7 @@
 
         </aside>
 
-        <!-- Права колонка: Метрики, DECIDE, Модуль еволюції P0-P3, 3D та Таблиця (8 колонок) -->
+        <!-- Права колонка: Метрики, DECIDE, Деталі сегмента, 3D та Рейтинг (8 колонок) -->
         <section class="lg:col-span-8 flex flex-col gap-4">
 
             <!-- Ряд 1: KPI картки + Smart DECIDE Recommendations -->
@@ -253,7 +253,7 @@
                     </div>
 
                     <div class="mt-3 pt-2.5 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-                        <span>Порівняння з P2 Actual Ideal:</span>
+                        <span>Порівняння з іншим періодом:</span>
                         <span id="p2ComparisonNote" class="font-mono text-slate-300">Dist: 5.91 (Sim: 92.1%)</span>
                     </div>
                 </div>
@@ -282,17 +282,17 @@
 
             </div>
 
-            <!-- Ряд 2: НОВИЙ МОДУЛЬ — Еволюція та прогноз ідеальних точок (P0 -> P1 -> P2 -> P3 Forecast) -->
+            <!-- Ряд 2: Еволюція та прогноз обраного сегмента (P0 -> P1 -> P2 -> P3 Forecast) -->
             <div class="bg-slate-900 rounded-2xl border border-indigo-500/30 p-4 shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <div>
                         <div class="flex items-center gap-2">
-                            <h3 class="text-sm sm:text-base font-bold text-white">Еволюція та прогноз ідеальних точок: <span id="trendSegmentTitle" class="text-indigo-400">Gen-Z</span></h3>
+                            <h3 class="text-sm sm:text-base font-bold text-white">Детальна динаміка сегмента у фокусі: <span id="trendSegmentTitle" class="text-indigo-400">Gen-Z</span></h3>
                             <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                                 P0 → P1 → P2 → P3 Forecast
                             </span>
                         </div>
-                        <p class="text-xs text-slate-400">Лінійна екстраполяція тренду вподобань сегмента на наступний період: P3 = P2 + (P2 − P0) / 2</p>
+                        <p class="text-xs text-slate-400">Лінійна екстраполяція тренду вподобань сегмента: P3 = clamp(P2 + (P2 − P0) / 2, 1.0, 7.0)</p>
                     </div>
                 </div>
 
@@ -388,6 +388,88 @@
             </div>
 
         </section>
+
+        <!-- НОВИЙ МОДУЛЬ (Повна ширина 12 колонок): Зведена таблиця еволюції та прогнозування всіх сегментів -->
+        <section class="lg:col-span-12 bg-slate-900 rounded-2xl border border-cyan-500/35 p-4 sm:p-5 shadow-lg">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800">
+                <div>
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                            Матриця всього ринку
+                        </span>
+                        <h2 class="text-base sm:text-lg font-bold text-white">
+                            Зведена таблиця еволюції та прогнозування всіх сегментів (P0 → P2 → ★ P3 Forecast + Порівняння з брендом)
+                        </h2>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">
+                        Одночасний моніторинг усіх 5 сегментів проти поточного стану бренду <strong id="allSegBrandLabel" class="text-cyan-300">MOST</strong>. Показує, які сегменти дрейфують ближче до бренду, а які віддаляються.
+                    </p>
+                </div>
+
+                <!-- Перемикач режиму відображення таблиці: Compact vs Full -->
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center bg-slate-950 border border-slate-800 p-1 rounded-xl text-xs font-semibold">
+                        <button id="allSegCompactBtn" onclick="setAllSegViewMode('compact')" class="px-3 py-1.5 rounded-lg transition bg-cyan-600 text-slate-950 shadow">
+                            Compact: P2 → ★ P3 + Δ
+                        </button>
+                        <button id="allSegFullBtn" onclick="setAllSegViewMode('full')" class="px-3 py-1.5 rounded-lg transition text-slate-400 hover:text-white">
+                            Full: P0, P1, P2, ★ P3
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/50">
+                            <th class="py-3 px-3 font-bold text-slate-200 sticky left-0 bg-slate-900 z-10 min-w-[140px]">Сегмент</th>
+                            <th class="py-3 px-2.5 font-semibold text-center min-w-[130px]">
+                                <div>Price</div>
+                                <div class="text-[10px] font-mono text-cyan-400">Вага: 10.0</div>
+                            </th>
+                            <th class="py-3 px-2.5 font-semibold text-center min-w-[130px]">
+                                <div>Proc. Power</div>
+                                <div class="text-[10px] font-mono text-emerald-400">Вага: 5.8</div>
+                            </th>
+                            <th class="py-3 px-2.5 font-semibold text-center min-w-[130px]">
+                                <div>Display Size</div>
+                                <div class="text-[10px] font-mono text-purple-400">Вага: 3.1</div>
+                            </th>
+                            <th class="py-3 px-2.5 font-semibold text-center min-w-[130px]">
+                                <div>Design Index</div>
+                                <div class="text-[10px] font-mono text-rose-400">Вага: 2.7</div>
+                            </th>
+                            <th class="py-3 px-2.5 font-semibold text-center min-w-[130px]">
+                                <div>Battery Life</div>
+                                <div class="text-[10px] font-mono text-amber-400">Вага: 1.5</div>
+                            </th>
+                            <th class="py-3 px-2.5 font-semibold text-center min-w-[130px]">
+                                <div># Features</div>
+                                <div class="text-[10px] font-mono text-sky-400">Вага: 1.2</div>
+                            </th>
+                            <th class="py-3 px-3 font-semibold text-right min-w-[135px] border-l border-slate-800">
+                                <div class="text-slate-300">Dist / Sim (P2)</div>
+                                <div class="text-[10px] font-normal text-slate-500">Факт Period 2</div>
+                            </th>
+                            <th class="py-3 px-3 font-semibold text-right min-w-[145px]">
+                                <div class="text-amber-300">Dist / Sim (★ P3)</div>
+                                <div class="text-[10px] font-normal text-amber-400/70">Прогноз Period 3</div>
+                            </th>
+                            <th class="py-3 px-3 font-semibold text-center min-w-[135px]">
+                                <div>Дрейф до бренду</div>
+                                <div class="text-[10px] font-normal text-slate-500">Δ Dist (P3 − P2)</div>
+                            </th>
+                            <th class="py-3 px-3 font-semibold text-right min-w-[95px]">Дія</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allSegmentsTableBody" class="divide-y divide-slate-800/80">
+                        <!-- Генерується через JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
     </main>
 
     <!-- Модальне вікно редагування координат -->
@@ -452,9 +534,12 @@
             { id: 'TOPS', name: 'TOPS', firm: 'Together', isOurs: false, features: 2.88, design: 1.63, battery: 1.84, display: 6.39, procPower: 6.14, price: 5.07 }
         ];
 
+        // Порядок відображення сегментів у зведеній таблиці
+        const SEGMENT_ORDER = ['Gen-Z', 'Millennials', 'Gen-X', 'Professionals', 'Baby Boomers'];
+
         // Точні історичні дані Ideal Values для Periods 0, 1, 2
         const segmentsHistory = {
-            'Baby Boomer': {
+            'Baby Boomers': {
                 P0: { features: 4.75, design: 1.72, battery: 6.24, display: 6.09, procPower: 6.38, price: 3.40 },
                 P1: { features: 4.65, design: 1.83, battery: 6.03, display: 6.02, procPower: 6.31, price: 3.53 },
                 P2: { features: 4.56, design: 1.94, battery: 5.83, display: 5.95, procPower: 6.24, price: 3.67 }
@@ -483,7 +568,8 @@
 
         // Стан додатку
         let state = {
-            targetMode: 'P3', // 'P2' (факт) або 'P3' (прогноз)
+            targetMode: 'P3',       // 'P2' (факт) або 'P3' (прогноз)
+            allSegViewMode: 'compact', // 'compact' або 'full'
             useWeighted: true,
             brandId: 'MOST',
             segmentId: 'Gen-Z',
@@ -547,6 +633,30 @@
                 badge.className = 'text-[11px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono';
             }
             updateAll();
+        }
+
+        // Перемикач режиму відображення зведеної таблиці всіх сегментів
+        function setAllSegViewMode(mode) {
+            state.allSegViewMode = mode;
+            const compactBtn = document.getElementById('allSegCompactBtn');
+            const fullBtn = document.getElementById('allSegFullBtn');
+
+            if (mode === 'compact') {
+                compactBtn.className = 'px-3 py-1.5 rounded-lg transition bg-cyan-600 text-slate-950 shadow';
+                fullBtn.className = 'px-3 py-1.5 rounded-lg transition text-slate-400 hover:text-white';
+            } else {
+                fullBtn.className = 'px-3 py-1.5 rounded-lg transition bg-cyan-600 text-slate-950 shadow';
+                compactBtn.className = 'px-3 py-1.5 rounded-lg transition text-slate-400 hover:text-white';
+            }
+            renderAllSegmentsMatrix();
+        }
+
+        // Швидкий вибір сегмента із зведеної таблиці ("Фокус")
+        function focusSegment(segName) {
+            document.getElementById('segmentSelect').value = segName;
+            onSelectionChange(true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast(`Фокус аналізатора перемкнено на сегмент: ${segName}`);
         }
 
         function onWeightedToggle() {
@@ -809,15 +919,16 @@
             document.getElementById('p2ComparisonNote').textContent = `${altLabel}: ${altDist.toFixed(2)} (${altIdx.toFixed(1)}%)`;
 
             // Оновлення всіх компонентів
-            renderDecideBlock(brand, targetCoords, segForecastObj);
+            renderDecideBlock(brand, targetCoords);
             renderTrendModule(brand, segForecastObj);
             renderRankingTable(brand, targetCoords, isModified);
             render3DCube(brand, segForecastObj, targetCoords, isModified);
             renderRadarChart(brand, segForecastObj, isModified);
+            renderAllSegmentsMatrix();
         }
 
         // Рекомендації DECIDE (Топ-2 Weighted Impact)
-        function renderDecideBlock(brand, targetCoords, segForecastObj) {
+        function renderDecideBlock(brand, targetCoords) {
             const grid = document.getElementById('decideCardsGrid');
             grid.innerHTML = '';
 
@@ -883,7 +994,7 @@
                 `\n\nРекомендовані Perceptual Objectives (нецінові): ${nonPriceTop2[0].label} (${nonPriceTop2[0].recommendedObj.toFixed(2)}) та ${nonPriceTop2[1].label} (${nonPriceTop2[1].recommendedObj.toFixed(2)}).`;
         }
 
-        // Модуль еволюції та прогнозу (Таблиця + Chart.js лінійний графік)
+        // Модуль еволюції та прогнозу сегмента у фокусі
         function renderTrendModule(brand, segObj) {
             document.getElementById('trendSegmentTitle').textContent = state.segmentId;
             const tbody = document.getElementById('trendTableBody');
@@ -923,7 +1034,6 @@
                 tbody.appendChild(tr);
             });
 
-            // Оновлення Chart.js
             if (trendChartInstance) {
                 trendChartInstance.data.datasets = ATTRIBUTES.map(attr => ({
                     label: attr.short,
@@ -940,7 +1050,6 @@
                     pointHoverRadius: 5,
                     tension: 0.25,
                     segment: {
-                        // Пунктир для прогнозованого відрізка P2 -> P3
                         borderDash: ctx => ctx.p0DataIndex === 2 ? [5, 4] : undefined
                     }
                 }));
@@ -1052,7 +1161,6 @@
 
             const traces = [];
 
-            // 1. Наші бренди Magnetix
             const ourBrands = brandsP2.filter(b => b.isOurs);
             traces.push({
                 type: 'scatter3d',
@@ -1068,7 +1176,6 @@
                 hovertemplate: `<b>%{text} (Magnetix P2)</b><br>${dimX.short}: %{x}<br>${dimY.short}: %{y}<br>${dimZ.short}: %{z}<extra></extra>`
             });
 
-            // 2. Конкуренти
             const comps = brandsP2.filter(b => !b.isOurs);
             traces.push({
                 type: 'scatter3d',
@@ -1084,7 +1191,6 @@
                 hovertemplate: `<b>%{text}</b><br>${dimX.short}: %{x}<br>${dimY.short}: %{y}<br>${dimZ.short}: %{z}<extra></extra>`
             });
 
-            // 3. Історична траєкторія сегмента P0 -> P1 -> P2 -> P3 Forecast
             traces.push({
                 type: 'scatter3d',
                 mode: 'lines+markers+text',
@@ -1105,7 +1211,6 @@
                 hovertemplate: `<b>%{text}</b><br>${dimX.short}: %{x}<br>${dimY.short}: %{y}<br>${dimZ.short}: %{z}<extra></extra>`
             });
 
-            // 4. Симульована точка (якщо є зсув)
             if (isModified) {
                 traces.push({
                     type: 'scatter3d',
@@ -1133,7 +1238,6 @@
                 });
             }
 
-            // 5. Пунктирна лінія від точки бренду до обраної цілі (P2 або P3)
             const startPt = isModified ? state.simCoords : activeBrand;
             traces.push({
                 type: 'scatter3d',
@@ -1170,7 +1274,7 @@
             Plotly.react('semantic3dPlot', traces, layout, { responsive: true, displayModeBar: true });
         }
 
-        // 6-осьовий Radar Chart (Brand P2 vs Ideal P2 vs Forecast P3)
+        // 6-осьовий Radar Chart
         function renderRadarChart(activeBrand, segObj, isModified) {
             const theta = [...ATTRIBUTES.map(a => a.short), ATTRIBUTES[0].short];
             const brandR = [...ATTRIBUTES.map(a => activeBrand[a.key]), activeBrand[ATTRIBUTES[0].key]];
@@ -1253,6 +1357,131 @@
             };
 
             Plotly.react('radarPlot', traces, layout, { responsive: true, displayModeBar: false });
+        }
+
+        // НОВИЙ МОДУЛЬ: Зведена таблиця еволюції та прогнозування всіх 5 сегментів
+        function renderAllSegmentsMatrix() {
+            const tbody = document.getElementById('allSegmentsTableBody');
+            tbody.innerHTML = '';
+
+            const brand = brandsP2.find(b => b.id === state.brandId);
+            const isModified = ATTRIBUTES.some(a => Math.abs(state.simCoords[a.key] - brand[a.key]) > 0.005);
+            const brandCoords = isModified ? state.simCoords : brand;
+
+            document.getElementById('allSegBrandLabel').textContent =
+                `${brand.name}${isModified ? ' (План симуляції)' : ' (Факт P2)'}`;
+
+            SEGMENT_ORDER.forEach(segName => {
+                const segData = getSegmentForecastP3(segName);
+                const isFocused = segName === state.segmentId;
+
+                // Відстані та індекси для P2 і P3 Forecast
+                const distP2 = calcDistance(brandCoords, segData.P2, state.useWeighted);
+                const simP2 = calcSimilarityIndex(distP2, state.useWeighted);
+
+                const distP3 = calcDistance(brandCoords, segData.P3, state.useWeighted);
+                const simP3 = calcSimilarityIndex(distP3, state.useWeighted);
+
+                const driftDelta = distP3 - distP2;
+                let driftBadgeHtml = '';
+                if (driftDelta < -0.05) {
+                    driftBadgeHtml = `
+                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono text-[11px] font-bold">
+                            ↘ ${driftDelta.toFixed(2)} (Ближче)
+                        </span>`;
+                } else if (driftDelta > 0.05) {
+                    driftBadgeHtml = `
+                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-500/15 text-rose-300 border border-rose-500/30 font-mono text-[11px] font-bold">
+                            ↗ +${driftDelta.toFixed(2)} (Далі)
+                        </span>`;
+                } else {
+                    driftBadgeHtml = `
+                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-mono text-[11px]">
+                            → ${driftDelta >= 0 ? '+' : ''}${driftDelta.toFixed(2)} (Стабільно)
+                        </span>`;
+                }
+
+                // Клітинки по кожному з 6 атрибутів
+                const attrCellsHtml = ATTRIBUTES.map(attr => {
+                    const v0 = segData.P0[attr.key];
+                    const v1 = segData.P1[attr.key];
+                    const v2 = segData.P2[attr.key];
+                    const v3 = segData.P3[attr.key];
+                    const step = segData.steps[attr.key];
+
+                    let trendColor = 'text-slate-400';
+                    let trendIcon = '→';
+                    if (step > 0.005) { trendColor = 'text-emerald-400'; trendIcon = '↑'; }
+                    else if (step < -0.005) { trendColor = 'text-rose-400'; trendIcon = '↓'; }
+
+                    if (state.allSegViewMode === 'compact') {
+                        return `
+                            <td class="py-2.5 px-2.5 text-center border-l border-slate-800/40">
+                                <div class="font-mono text-xs flex items-center justify-center gap-1">
+                                    <span class="text-slate-300">${v2.toFixed(2)}</span>
+                                    <span class="text-slate-500">→</span>
+                                    <span class="font-bold text-amber-300">${v3.toFixed(2)}</span>
+                                </div>
+                                <div class="font-mono text-[10px] ${trendColor} mt-0.5">
+                                    ${trendIcon} ${step >= 0 ? '+' : ''}${step.toFixed(2)}/пер
+                                </div>
+                            </td>
+                        `;
+                    } else {
+                        return `
+                            <td class="py-2.5 px-2.5 text-center border-l border-slate-800/40">
+                                <div class="font-mono text-[11px] text-slate-400">
+                                    P0:${v0.toFixed(2)} • P1:${v1.toFixed(2)}
+                                </div>
+                                <div class="font-mono text-xs mt-0.5 flex items-center justify-center gap-1">
+                                    <span class="text-white font-semibold">P2:${v2.toFixed(2)}</span>
+                                    <span class="text-slate-500">→</span>
+                                    <span class="font-bold text-amber-300">★${v3.toFixed(2)}</span>
+                                </div>
+                                <div class="font-mono text-[10px] ${trendColor}">
+                                    ${trendIcon} ${step >= 0 ? '+' : ''}${step.toFixed(2)}/пер
+                                </div>
+                            </td>
+                        `;
+                    }
+                }).join('');
+
+                const tr = document.createElement('tr');
+                tr.className = isFocused
+                    ? 'bg-indigo-950/35 hover:bg-indigo-950/50 transition'
+                    : 'hover:bg-slate-800/40 transition';
+
+                tr.innerHTML = `
+                    <td class="py-3 px-3 sticky left-0 ${isFocused ? 'bg-indigo-950/90' : 'bg-slate-900'} z-10">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full ${isFocused ? 'bg-indigo-400 animate-pulse' : 'bg-slate-600'}"></span>
+                            <span class="font-bold text-white text-xs sm:text-sm">${segName}</span>
+                        </div>
+                        ${isFocused ? '<span class="inline-block mt-1 text-[10px] font-semibold px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">У фокусі 3D</span>' : ''}
+                    </td>
+                    ${attrCellsHtml}
+                    <td class="py-3 px-3 text-right font-mono border-l border-slate-800">
+                        <div class="text-slate-200 font-semibold">${distP2.toFixed(2)}</div>
+                        <div class="text-[11px] text-slate-400">${simP2.toFixed(1)}%</div>
+                    </td>
+                    <td class="py-3 px-3 text-right font-mono bg-amber-500/5">
+                        <div class="text-amber-300 font-bold">${distP3.toFixed(2)}</div>
+                        <div class="text-[11px] text-emerald-400 font-semibold">${simP3.toFixed(1)}%</div>
+                    </td>
+                    <td class="py-3 px-3 text-center">
+                        ${driftBadgeHtml}
+                    </td>
+                    <td class="py-3 px-3 text-right">
+                        <button onclick="focusSegment('${segName}')"
+                            class="px-2.5 py-1.5 rounded-lg text-xs font-semibold transition ${isFocused
+                                ? 'bg-indigo-600 text-white shadow cursor-default'
+                                : 'bg-slate-800 hover:bg-cyan-600 text-slate-200 hover:text-slate-950 border border-slate-700'}">
+                            ${isFocused ? 'Обрано' : 'Фокус'}
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
         // Модальне вікно редагування даних брендів
