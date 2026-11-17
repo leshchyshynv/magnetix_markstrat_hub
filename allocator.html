@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markstrat Allocator — Медіабюджет та Дистрибуція (Sonites)</title>
+    <!-- Підключення Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Підключення Chart.js для візуалізації пропорцій -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Шрифт Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        input[type="range"] {
+            accent-color: #2563eb;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+    <!-- Верхня панель навігації -->
+    <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 py-3.5 shadow-xs">
+        <div class="max-w-[1560px] mx-auto flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
+                    M
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-900">Markstrat Decision Allocator</h1>
+                        <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                            Market: Sonites
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500">Розрахунок медіаміксу (Media Habits + ROMI) та дистрибуції (Shopping Habits + Salesforce)</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="copySummaryToClipboard()" class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition flex items-center gap-2 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    <span>Копіювати звіт для DECIDE</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Toast сповіщення -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl text-sm font-medium flex items-center gap-2.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span id="toastText">Скопійовано</span>
+        </div>
+    </div>
+
+    <!-- Основний контейнер -->
+    <main class="flex-1 max-w-[1560px] w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Ліва колонка: Вхідні параметри та Таргетинг (4 колонки) -->
+        <aside class="lg:col-span-4 flex flex-col gap-5">
+            
+            <!-- Картка 1: Таргетинг по сегментах -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500">1. Таргетинг по сегментах</h2>
+                    <span id="targetSumBadge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Сума: 100%
+                    </span>
+                </div>
+
+                <!-- Швидкі пресети команди -->
+                <div class="flex flex-wrap gap-1.5 mb-4">
+                    <button onclick="applyPreset('MOST')" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition">
+                        MOST (80% Gen-Z / 20% Mill.)
+                    </button>
+                    <button onclick="applyPreset('MOVE')" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition">
+                        MOVE (60% Prof. / 40% Gen-X)
+                    </button>
+                    <button onclick="normalizeTargeting()" id="normalizeBtn" class="hidden px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition">
+                        Нормалізувати до 100%
+                    </button>
+                </div>
+
+                <!-- Повзунки сегментів -->
+                <div id="segmentSlidersContainer" class="space-y-3.5">
+                    <!-- Генерується через JS -->
+                </div>
+
+                <!-- Попередження при сумі != 100% -->
+                <div id="sumWarning" class="hidden mt-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center justify-between gap-2">
+                    <span>Сума таргетингу має дорівнювати 100% для коректного розрахунку.</span>
+                    <button onclick="normalizeTargeting()" class="shrink-0 font-bold underline hover:text-amber-950">Вирівняти</button>
+                </div>
+            </div>
+
+            <!-- Картка 2: Налаштування ROMI -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500">2. Корекція за ROMI</h2>
+                        <p class="text-[11px] text-slate-400">Множник (1 + ROMI); від'ємний ROMI → 0%</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="romiToggle" checked onchange="recalculateAll()" class="sr-only peer">
+                        <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
+                <!-- Пресети ROMI -->
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-xs text-slate-500">Коефіцієнти бренду:</span>
+                    <button onclick="applyRomiPreset('MOST')" class="px-2 py-1 text-xs font-medium rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 transition">MOST</button>
+                    <button onclick="applyRomiPreset('MOVE')" class="px-2 py-1 text-xs font-medium rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 transition">MOVE</button>
+                </div>
+
+                <!-- Поля вводу ROMI по каналах -->
+                <div id="romiInputsContainer" class="space-y-2">
+                    <!-- Генерується через JS -->
+                </div>
+            </div>
+
+            <!-- Картка 3: Операційні ресурси (Бюджет і Salesforce) -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">3. Ресурси для DECIDE</h2>
+                
+                <div class="space-y-3.5">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Загальний рекламний бюджет (K$)</label>
+                        <input type="number" id="totalAdBudget" value="2000" min="0" step="50" oninput="recalculateAll()" class="w-full rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-semibold text-slate-700">Частка на Advertising Research</label>
+                            <span id="researchPctLabel" class="text-xs font-bold text-blue-600">12% (240 K$)</span>
+                        </div>
+                        <input type="range" id="researchPct" min="0" max="25" step="1" value="12" oninput="recalculateAll()" class="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                            <span>0%</span>
+                            <span>Рекомендовано: 10–15%</span>
+                            <span>25%</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-100">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Загальна кількість торгових агентів (Salesforce)</label>
+                        <input type="number" id="totalSalesforce" value="50" min="1" step="1" oninput="recalculateAll()" class="w-full rounded-xl bg-slate-50 border border-slate-300 px-3 py-2 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Права колонка: Результати розрахунків та графіки (8 колонок) -->
+        <section class="lg:col-span-8 flex flex-col gap-6">
+            
+            <!-- Блок A: Розподіл медіабюджету (Media Allocation) -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+                <div class="flex flex-wrap items-start justify-between gap-2 mb-4">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-900">Розподіл рекламного бюджету (Media Allocation)</h2>
+                        <p class="text-xs text-slate-500">Розраховано на основі зважених Media Habits та мультиплікатора ROMI</p>
+                    </div>
+                    <div class="flex items-center gap-3 bg-blue-50/80 border border-blue-100 px-3.5 py-2 rounded-xl">
+                        <div>
+                            <div class="text-[10px] uppercase font-semibold text-blue-600">Чистий медіабюджет</div>
+                            <div id="netMediaBudgetDisplay" class="text-sm font-bold text-slate-900">1 760 K$</div>
+                        </div>
+                        <div class="h-6 w-px bg-blue-200"></div>
+                        <div>
+                            <div class="text-[10px] uppercase font-semibold text-indigo-600">Adv. Research</div>
+                            <div id="researchBudgetDisplay" class="text-sm font-bold text-indigo-700">240 K$</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-center">
+                    <!-- Таблиця результатів медіа -->
+                    <div class="xl:col-span-7 overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-slate-500 text-xs">
+                                    <th class="py-2.5 pr-2 font-semibold">Медіаканал</th>
+                                    <th class="py-2.5 px-2 font-semibold text-right">Базова (%)</th>
+                                    <th class="py-2.5 px-2 font-semibold text-right">ROMI</th>
+                                    <th class="py-2.5 px-2 font-semibold text-right text-blue-600">Фінал (%)</th>
+                                    <th class="py-2.5 pl-2 font-semibold text-right">Бюджет (K$)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mediaResultsBody" class="divide-y divide-slate-100">
+                                <!-- Генерується через JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Графік медіа -->
+                    <div class="xl:col-span-5 h-[240px] flex items-center justify-center">
+                        <canvas id="mediaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Блок B: Розподіл каналів дистрибуції та Salesforce -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+                <div class="flex flex-wrap items-start justify-between gap-2 mb-4">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-900">Дистрибуція та торгова команда (Channel & Salesforce)</h2>
+                        <p class="text-xs text-slate-500">Пропорції на основі звичок купівлі (Shopping Habits) обраних сегментів</p>
+                    </div>
+                    <div class="bg-pink-50/80 border border-pink-100 px-3.5 py-2 rounded-xl text-right">
+                        <div class="text-[10px] uppercase font-semibold text-pink-600">Команда для розподілу</div>
+                        <div id="salesforceTotalDisplay" class="text-sm font-bold text-slate-900">50 агентів</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-center">
+                    <!-- Таблиця дистрибуції -->
+                    <div class="xl:col-span-7 overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-slate-500 text-xs">
+                                    <th class="py-2.5 pr-2 font-semibold">Канал збуту</th>
+                                    <th class="py-2.5 px-2 font-semibold text-right">Частка попиту (%)</th>
+                                    <th class="py-2.5 px-2 font-semibold text-right">Точний розрахунок</th>
+                                    <th class="py-2.5 pl-2 font-semibold text-right text-pink-600">Агентів (DECIDE)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="distResultsBody" class="divide-y divide-slate-100">
+                                <!-- Генерується через JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Графік дистрибуції -->
+                    <div class="xl:col-span-5 h-[240px] flex items-center justify-center">
+                        <canvas id="distChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Блок C: Довідкові матриці з можливістю редагування -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <button onclick="toggleMatricesAccordion()" class="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-slate-50 transition">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800">Базові матриці звичок споживачів (Media Habits & Shopping Habits)</h3>
+                        <p class="text-xs text-slate-500">Натисніть, щоб переглянути або відредагувати вихідні дані звітів Markstrat</p>
+                    </div>
+                    <svg id="accordionArrow" class="w-5 h-5 text-slate-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+
+                <div id="matricesContent" class="hidden border-t border-slate-200 p-5 space-y-6 bg-slate-50/50">
+                    <!-- Матриця Media Habits -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-blue-700">Таблиця 1: Звички споживання медіа (Media Habits, %)</h4>
+                            <button onclick="resetMatricesToDefault()" class="text-xs text-slate-500 hover:text-slate-800 underline">Відновити стандартні</button>
+                        </div>
+                        <div class="overflow-x-auto bg-white rounded-xl border border-slate-200">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="border-b border-slate-200 bg-slate-50 text-slate-600">
+                                        <th class="py-2 px-3 font-semibold">Медіаканал</th>
+                                        <th class="py-2 px-2 font-semibold text-center">Gen-Z</th>
+                                        <th class="py-2 px-2 font-semibold text-center">Millennials</th>
+                                        <th class="py-2 px-2 font-semibold text-center">Gen-X</th>
+                                        <th class="py-2 px-2 font-semibold text-center">Baby Boomers</th>
+                                        <th class="py-2 px-2 font-semibold text-center">Professionals</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mediaMatrixEditBody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Матриця Shopping Habits -->
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-pink-700 mb-2">Таблиця 2: Звички купівлі по каналах (Shopping Habits, %)</h4>
+                        <div class="overflow-x-auto bg-white rounded-xl border border-slate-200">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="border-b border-slate-200 bg-slate-50 text-slate-600">
+                                        <th class="py-2 px-3 font-semibold">Сегмент</th>
+                                        <th class="py-2 px-2 font-semibold text-center">Specialty Stores</th>
+                                        <th class="py-2 px-2 font-semibold text-center">Mass Merch.</th>
+                                        <th class="py-2 px-2 font-semibold text-center">eCommerce</th>
+                                        <th class="py-2 px-2 font-semibold text-center">eStore</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="shoppingMatrixEditBody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        // Перелік сегментів
+        const SEGMENTS = [
+            { id: 'genz', name: 'Gen-Z', color: '#2563eb' },
+            { id: 'millennials', name: 'Millennials', color: '#4f46e5' },
+            { id: 'genx', name: 'Gen-X', color: '#0891b2' },
+            { id: 'boomers', name: 'Baby Boomers', color: '#d97706' },
+            { id: 'professionals', name: 'Professionals', color: '#059669' }
+        ];
+
+        // Перелік медіаканалів
+        const MEDIA_CHANNELS = [
+            { id: 'owned', name: 'Digital Owned', color: '#2563eb' },
+            { id: 'paid', name: 'Digital Paid', color: '#3b82f6' },
+            { id: 'earned', name: 'Digital Earned', color: '#10b981' },
+            { id: 'traditional', name: 'Traditional Media', color: '#f59e0b' },
+            { id: 'outdoor', name: 'Outdoor Media', color: '#64748b' }
+        ];
+
+        // Перелік каналів дистрибуції
+        const DIST_CHANNELS = [
+            { id: 'specialty', name: 'Specialty Stores', color: '#db2777' },
+            { id: 'mass', name: 'Mass Merch.', color: '#be123c' },
+            { id: 'ecommerce', name: 'eCommerce', color: '#6b21a8' },
+            { id: 'estore', name: 'eStore', color: '#ec4899' }
+        ];
+
+        // Початкові дані Media Habits (зі скріншота користувача)
+        const DEFAULT_MEDIA_HABITS = {
+            owned:       { professionals: 20, boomers: 10, genx: 15, millennials: 25, genz: 25 },
+            paid:        { professionals: 20, boomers: 5,  genx: 15, millennials: 25, genz: 25 },
+            earned:      { professionals: 20, boomers: 5,  genx: 15, millennials: 25, genz: 30 },
+            traditional: { professionals: 20, boomers: 50, genx: 30, millennials: 15, genz: 10 },
+            outdoor:     { professionals: 20, boomers: 30, genx: 25, millennials: 10, genz: 10 }
+        };
+
+        // Початкові дані Shopping Habits (зі скріншота користувача)
+        const DEFAULT_SHOPPING_HABITS = {
+            genz:          { specialty: 30, mass: 60, ecommerce: 8,  estore: 2 },
+            millennials:   { specialty: 45, mass: 43, ecommerce: 9,  estore: 3 },
+            genx:          { specialty: 50, mass: 33, ecommerce: 12, estore: 5 },
+            boomers:       { specialty: 75, mass: 10, ecommerce: 12, estore: 3 },
+            professionals: { specialty: 60, mass: 20, ecommerce: 15, estore: 5 }
+        };
+
+        // Початкові значення ROMI
+        const ROMI_PRESETS = {
+            MOST: { owned: 0.50, paid: 0.33, earned: 0.58, traditional: -0.27, outdoor: -0.29 },
+            MOVE: { owned: 0.77, paid: 0.75, earned: 0.92, traditional: 0.24,  outdoor: 0.78 }
+        };
+
+        // Активний стан додатку
+        let mediaHabits = JSON.parse(JSON.stringify(DEFAULT_MEDIA_HABITS));
+        let shoppingHabits = JSON.parse(JSON.stringify(DEFAULT_SHOPPING_HABITS));
+        let targeting = { genz: 80, millennials: 20, genx: 0, boomers: 0, professionals: 0 };
+        let romiValues = { ...ROMI_PRESETS.MOST };
+
+        let mediaChartInstance = null;
+        let distChartInstance = null;
+        let lastComputedReport = '';
+
+        // Ініціалізація інтерфейсу
+        window.addEventListener('DOMContentLoaded', () => {
+            renderTargetingControls();
+            renderRomiControls();
+            renderReferenceMatrices();
+            initCharts();
+            recalculateAll();
+        });
+
+        // Рендер повзунків таргетингу
+        function renderTargetingControls() {
+            const container = document.getElementById('segmentSlidersContainer');
+            container.innerHTML = '';
+
+            SEGMENTS.forEach(seg => {
+                const val = targeting[seg.id];
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${seg.color}"></span>
+                            ${seg.name}
+                        </span>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="num_seg_${seg.id}" min="0" max="100" step="1" value="${val}" 
+                                oninput="onTargetInput('${seg.id}', this.value)"
+                                class="w-16 text-right text-xs font-bold rounded-lg bg-slate-50 border border-slate-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <span class="text-xs text-slate-400">%</span>
+                        </div>
+                    </div>
+                    <input type="range" id="rng_seg_${seg.id}" min="0" max="100" step="1" value="${val}"
+                        oninput="onTargetRange('${seg.id}', this.value)"
+                        class="w-full h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function onTargetRange(segId, val) {
+            targeting[segId] = parseFloat(val) || 0;
+            document.getElementById(`num_seg_${segId}`).value = targeting[segId];
+            recalculateAll();
+        }
+
+        function onTargetInput(segId, val) {
+            let num = parseFloat(val);
+            if (isNaN(num)) num = 0;
+            num = Math.max(0, Math.min(100, num));
+            targeting[segId] = num;
+            document.getElementById(`rng_seg_${segId}`).value = num;
+            recalculateAll();
+        }
+
+        // Пресети таргетингу
+        function applyPreset(brand) {
+            if (brand === 'MOST') {
+                targeting = { genz: 80, millennials: 20, genx: 0, boomers: 0, professionals: 0 };
+                applyRomiPreset('MOST');
+            } else if (brand === 'MOVE') {
+                targeting = { genz: 0, millennials: 0, genx: 40, boomers: 0, professionals: 60 };
+                applyRomiPreset('MOVE');
+            }
+            updateTargetingUI();
+            recalculateAll();
+            showToast(`Застосовано пресет для бренду ${brand}`);
+        }
+
+        function normalizeTargeting() {
+            const sum = Object.values(targeting).reduce((a, b) => a + b, 0);
+            if (sum === 0) {
+                targeting.genz = 100;
+            } else {
+                let runningTotal = 0;
+                const keys = Object.keys(targeting);
+                keys.forEach((k, idx) => {
+                    if (idx === keys.length - 1) {
+                        targeting[k] = Math.max(0, Math.round(100 - runningTotal));
+                    } else {
+                        targeting[k] = Math.round((targeting[k] / sum) * 100);
+                        runningTotal += targeting[k];
+                    }
+                });
+            }
+            updateTargetingUI();
+            recalculateAll();
+            showToast('Частки сегментів нормалізовано до 100%');
+        }
+
+        function updateTargetingUI() {
+            SEGMENTS.forEach(seg => {
+                document.getElementById(`num_seg_${seg.id}`).value = targeting[seg.id];
+                document.getElementById(`rng_seg_${seg.id}`).value = targeting[seg.id];
+            });
+        }
+
+        // Рендер контролів ROMI
+        function renderRomiControls() {
+            const container = document.getElementById('romiInputsContainer');
+            container.innerHTML = '';
+
+            MEDIA_CHANNELS.forEach(ch => {
+                const val = romiValues[ch.id];
+                const isNeg = val <= 0;
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between py-1';
+                row.innerHTML = `
+                    <span class="text-xs font-medium text-slate-700">${ch.name}</span>
+                    <div class="flex items-center gap-2">
+                        <span id="romi_badge_${ch.id}" class="text-[10px] px-1.5 py-0.5 rounded font-semibold ${isNeg ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-700'}">
+                            ${isNeg ? 'Вимкн. (0%)' : '×' + (1 + val).toFixed(2)}
+                        </span>
+                        <input type="number" id="romi_in_${ch.id}" step="0.01" value="${val.toFixed(2)}"
+                            oninput="onRomiChange('${ch.id}', this.value)"
+                            class="w-20 text-right text-xs font-bold rounded-lg bg-slate-50 border border-slate-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function onRomiChange(chId, val) {
+            const num = parseFloat(val);
+            romiValues[chId] = isNaN(num) ? 0 : num;
+            recalculateAll();
+        }
+
+        function applyRomiPreset(brand) {
+            romiValues = { ...ROMI_PRESETS[brand] };
+            MEDIA_CHANNELS.forEach(ch => {
+                document.getElementById(`romi_in_${ch.id}`).value = romiValues[ch.id].toFixed(2);
+            });
+            recalculateAll();
+        }
+
+        // Головна функція перерахунку всіх показників
+        function recalculateAll() {
+            // 1. Валідація суми таргетингу
+            const totalTargetPct = Object.values(targeting).reduce((a, b) => a + b, 0);
+            const badge = document.getElementById('targetSumBadge');
+            const warning = document.getElementById('sumWarning');
+            const normBtn = document.getElementById('normalizeBtn');
+
+            badge.textContent = `Сума: ${totalTargetPct}%`;
+            if (Math.abs(totalTargetPct - 100) < 0.01) {
+                badge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200';
+                warning.classList.add('hidden');
+                normBtn.classList.add('hidden');
+            } else {
+                badge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200';
+                warning.classList.remove('hidden');
+                normBtn.classList.remove('hidden');
+            }
+
+            const weightFactor = totalTargetPct > 0 ? (100 / totalTargetPct) : 0;
+
+            // 2. Розрахунок бюджетів
+            const totalAdBudget = Math.max(0, parseFloat(document.getElementById('totalAdBudget').value) || 0);
+            const researchPct = parseFloat(document.getElementById('researchPct').value) || 0;
+            const researchBudget = totalAdBudget * (researchPct / 100);
+            const netMediaBudget = totalAdBudget - researchBudget;
+
+            document.getElementById('researchPctLabel').textContent = `${researchPct}% (${researchBudget.toFixed(0)} K$)`;
+            document.getElementById('netMediaBudgetDisplay').textContent = `${netMediaBudget.toFixed(0)} K$`;
+            document.getElementById('researchBudgetDisplay').textContent = `${researchBudget.toFixed(0)} K$`;
+
+            // 3. Розрахунок базової та ROMI-скоригованої медіа-алокації
+            const useRomi = document.getElementById('romiToggle').checked;
+            let baseShares = {};
+            let adjustedWeights = {};
+            let sumAdjustedWeights = 0;
+
+            MEDIA_CHANNELS.forEach(ch => {
+                let weightedHabit = 0;
+                SEGMENTS.forEach(seg => {
+                    const segShare = (targeting[seg.id] * weightFactor) / 100;
+                    weightedHabit += segShare * (mediaHabits[ch.id][seg.id] || 0);
+                });
+                baseShares[ch.id] = weightedHabit;
+
+                const romi = romiValues[ch.id];
+                const romiBadge = document.getElementById(`romi_badge_${ch.id}`);
+                if (romiBadge) {
+                    if (!useRomi) {
+                        romiBadge.textContent = 'Вимкн.';
+                        romiBadge.className = 'text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-100 text-slate-500';
+                    } else if (romi <= 0) {
+                        romiBadge.textContent = 'Збиток (0%)';
+                        romiBadge.className = 'text-[10px] px-1.5 py-0.5 rounded font-semibold bg-rose-50 text-rose-600';
+                    } else {
+                        romiBadge.textContent = `×${(1 + romi).toFixed(2)}`;
+                        romiBadge.className = 'text-[10px] px-1.5 py-0.5 rounded font-semibold bg-emerald-50 text-emerald-700';
+                    }
+                }
+
+                let adjW = weightedHabit;
+                if (useRomi) {
+                    adjW = romi <= 0 ? 0 : weightedHabit * (1 + romi);
+                }
+                adjustedWeights[ch.id] = adjW;
+                sumAdjustedWeights += adjW;
+            });
+
+            // Нормалізація медіа до 100%
+            const mediaResultsBody = document.getElementById('mediaResultsBody');
+            mediaResultsBody.innerHTML = '';
+
+            const finalMediaPcts = [];
+            MEDIA_CHANNELS.forEach(ch => {
+                const basePct = baseShares[ch.id];
+                const finalPct = sumAdjustedWeights > 0 ? (adjustedWeights[ch.id] / sumAdjustedWeights) * 100 : 0;
+                finalMediaPcts.push(finalPct);
+                const dollarAmt = netMediaBudget * (finalPct / 100);
+                const romi = romiValues[ch.id];
+
+                const tr = document.createElement('tr');
+                tr.className = finalPct === 0 ? 'bg-slate-50/70 text-slate-400' : 'hover:bg-slate-50';
+                tr.innerHTML = `
+                    <td class="py-2.5 pr-2 font-semibold flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${ch.color}"></span>
+                        ${ch.name}
+                    </td>
+                    <td class="py-2.5 px-2 text-right text-slate-500">${basePct.toFixed(1)}%</td>
+                    <td class="py-2.5 px-2 text-right font-medium ${romi < 0 ? 'text-rose-500' : 'text-emerald-600'}">
+                        ${romi >= 0 ? '+' : ''}${romi.toFixed(2)}
+                    </td>
+                    <td class="py-2.5 px-2 text-right font-bold text-blue-600">${finalPct.toFixed(1)}%</td>
+                    <td class="py-2.5 pl-2 text-right font-bold text-slate-900">${dollarAmt.toFixed(0)} K$</td>
+                `;
+                mediaResultsBody.appendChild(tr);
+            });
+
+            // 4. Розрахунок дистрибуції та Salesforce (метод найбільших залишків для цілих чисел)
+            const totalReps = Math.max(0, Math.round(parseFloat(document.getElementById('totalSalesforce').value) || 0));
+            document.getElementById('salesforceTotalDisplay').textContent = `${totalReps} агентів`;
+
+            let distShares = {};
+            let sumDistShares = 0;
+            DIST_CHANNELS.forEach(dc => {
+                let weightedShop = 0;
+                SEGMENTS.forEach(seg => {
+                    const segShare = (targeting[seg.id] * weightFactor) / 100;
+                    weightedShop += segShare * (shoppingHabits[seg.id][dc.id] || 0);
+                });
+                distShares[dc.id] = weightedShop;
+                sumDistShares += weightedShop;
+            });
+
+            // Нормалізація дистрибуції та округлення агентів до цілих так, щоб сума == totalReps
+            const normalizedDist = DIST_CHANNELS.map(dc => {
+                const pct = sumDistShares > 0 ? (distShares[dc.id] / sumDistShares) * 100 : 0;
+                const exactReps = totalReps * (pct / 100);
+                const floorReps = Math.floor(exactReps);
+                return {
+                    ...dc,
+                    pct,
+                    exactReps,
+                    reps: floorReps,
+                    remainder: exactReps - floorReps
+                };
+            });
+
+            let allocatedReps = normalizedDist.reduce((sum, item) => sum + item.reps, 0);
+            let remainingReps = totalReps - allocatedReps;
+
+            // Розподіл залишкових агентів за найбільшою дробовою частиною
+            const sortedByRemainder = [...normalizedDist].sort((a, b) => b.remainder - a.remainder);
+            for (let i = 0; i < remainingReps; i++) {
+                sortedByRemainder[i % sortedByRemainder.length].reps += 1;
+            }
+
+            const distResultsBody = document.getElementById('distResultsBody');
+            distResultsBody.innerHTML = '';
+            const finalDistPcts = [];
+
+            normalizedDist.forEach(item => {
+                finalDistPcts.push(item.pct);
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50';
+                tr.innerHTML = `
+                    <td class="py-2.5 pr-2 font-semibold flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${item.color}"></span>
+                        ${item.name}
+                    </td>
+                    <td class="py-2.5 px-2 text-right font-semibold text-slate-700">${item.pct.toFixed(1)}%</td>
+                    <td class="py-2.5 px-2 text-right text-slate-400">${item.exactReps.toFixed(2)}</td>
+                    <td class="py-2.5 pl-2 text-right font-bold text-pink-600 text-sm">${item.reps}</td>
+                `;
+                distResultsBody.appendChild(tr);
+            });
+
+            // 5. Оновлення графіків
+            updateCharts(finalMediaPcts, finalDistPcts);
+
+            // 6. Формування текстового звіту для буфера обміну
+            buildTextReport(totalAdBudget, researchPct, researchBudget, netMediaBudget, finalMediaPcts, normalizedDist, totalReps);
+        }
+
+        // Ініціалізація графіків Chart.js
+        function initCharts() {
+            const mediaCtx = document.getElementById('mediaChart').getContext('2d');
+            mediaChartInstance = new Chart(mediaCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: MEDIA_CHANNELS.map(c => c.name),
+                    datasets: [{
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: MEDIA_CHANNELS.map(c => c.color),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '62%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 10, font: { size: 11, family: 'Inter' } }
+                        }
+                    }
+                }
+            });
+
+            const distCtx = document.getElementById('distChart').getContext('2d');
+            distChartInstance = new Chart(distCtx, {
+                type: 'bar',
+                data: {
+                    labels: DIST_CHANNELS.map(c => c.name),
+                    datasets: [{
+                        label: 'Частка попиту (%)',
+                        data: [0, 0, 0, 0],
+                        backgroundColor: DIST_CHANNELS.map(c => c.color),
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: { color: '#f1f5f9' },
+                            ticks: { font: { size: 10 } }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { font: { size: 11, weight: '600', family: 'Inter' } }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function updateCharts(mediaPcts, distPcts) {
+            if (mediaChartInstance) {
+                mediaChartInstance.data.datasets[0].data = mediaPcts.map(v => Number(v.toFixed(1)));
+                mediaChartInstance.update();
+            }
+            if (distChartInstance) {
+                distChartInstance.data.datasets[0].data = distPcts.map(v => Number(v.toFixed(1)));
+                distChartInstance.update();
+            }
+        }
+
+        // Рендер таблиць матриць для редагування
+        function renderReferenceMatrices() {
+            const mediaBody = document.getElementById('mediaMatrixEditBody');
+            mediaBody.innerHTML = '';
+            MEDIA_CHANNELS.forEach(ch => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-2 px-3 font-semibold text-slate-700">${ch.name}</td>
+                    ${SEGMENTS.map(seg => `
+                        <td class="py-1.5 px-2 text-center">
+                            <input type="number" min="0" max="100" value="${mediaHabits[ch.id][seg.id]}"
+                                onchange="updateMediaHabit('${ch.id}', '${seg.id}', this.value)"
+                                class="w-14 text-center rounded border border-slate-200 bg-slate-50 py-1 font-medium">
+                        </td>
+                    `).join('')}
+                `;
+                mediaBody.appendChild(tr);
+            });
+
+            const shopBody = document.getElementById('shoppingMatrixEditBody');
+            shopBody.innerHTML = '';
+            SEGMENTS.forEach(seg => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-2 px-3 font-semibold text-slate-700">${seg.name}</td>
+                    ${DIST_CHANNELS.map(dc => `
+                        <td class="py-1.5 px-2 text-center">
+                            <input type="number" min="0" max="100" value="${shoppingHabits[seg.id][dc.id]}"
+                                onchange="updateShoppingHabit('${seg.id}', '${dc.id}', this.value)"
+                                class="w-14 text-center rounded border border-slate-200 bg-slate-50 py-1 font-medium">
+                        </td>
+                    `).join('')}
+                `;
+                shopBody.appendChild(tr);
+            });
+        }
+
+        function updateMediaHabit(chId, segId, val) {
+            mediaHabits[chId][segId] = Math.max(0, Math.min(100, parseFloat(val) || 0));
+            recalculateAll();
+        }
+
+        function updateShoppingHabit(segId, dcId, val) {
+            shoppingHabits[segId][dcId] = Math.max(0, Math.min(100, parseFloat(val) || 0));
+            recalculateAll();
+        }
+
+        function resetMatricesToDefault() {
+            mediaHabits = JSON.parse(JSON.stringify(DEFAULT_MEDIA_HABITS));
+            shoppingHabits = JSON.parse(JSON.stringify(DEFAULT_SHOPPING_HABITS));
+            renderReferenceMatrices();
+            recalculateAll();
+            showToast('Матриці повернуто до стандартних значень');
+        }
+
+        function toggleMatricesAccordion() {
+            const content = document.getElementById('matricesContent');
+            const arrow = document.getElementById('accordionArrow');
+            content.classList.toggle('hidden');
+            arrow.classList.toggle('rotate-180');
+        }
+
+        // Формування та копіювання звіту
+        function buildTextReport(totalAd, resPct, resAmt, netMedia, mediaPcts, distList, totalReps) {
+            const targetStr = SEGMENTS.filter(s => targeting[s.id] > 0)
+                .map(s => `${s.name}: ${targeting[s.id]}%`).join(', ');
+
+            const mediaLines = MEDIA_CHANNELS.map((ch, i) => 
+                `- ${ch.name}: ${mediaPcts[i].toFixed(1)}% (${(netMedia * mediaPcts[i] / 100).toFixed(0)} K$)`
+            ).join('\n');
+
+            const distLines = distList.map(d => 
+                `- ${d.name}: ${d.pct.toFixed(1)}% -> ${d.reps} агентів`
+            ).join('\n');
+
+            lastComputedReport = `MARKSTRAT DECIDE — ПЛАН АЛОКАЦІЇ\n` +
+                `Таргетинг: ${targetStr}\n\n` +
+                `1. РЕКЛАМНИЙ БЮДЖЕТ (Всього: ${totalAd} K$)\n` +
+                `- Advertising Research (${resPct}%): ${resAmt.toFixed(0)} K$\n` +
+                `- Медіабюджет (${100 - resPct}%): ${netMedia.toFixed(0)} K$\n` +
+                `${mediaLines}\n\n` +
+                `2. ДИСТРИБУЦІЯ ТА SALESFORCE (Всього: ${totalReps} агентів)\n` +
+                `${distLines}`;
+        }
+
+        function copySummaryToClipboard() {
+            const textArea = document.createElement('textarea');
+            textArea.value = lastComputedReport;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast('Звіт для DECIDE скопійовано в буфер обміну');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastText').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

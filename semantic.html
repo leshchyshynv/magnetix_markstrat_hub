@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="uk" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markstrat 6D Semantic Scales — Weighted Analyzer (Magnetix)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <!-- Шрифти Inter та JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.25);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.45);
+        }
+        input[type="range"] {
+            accent-color: #06b6d4;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
+
+    <!-- Верхня панель навігації -->
+    <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3">
+        <div class="max-w-[1680px] mx-auto flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-emerald-600 flex items-center justify-center text-slate-950 font-extrabold shadow-lg shadow-cyan-500/20 text-sm font-mono">
+                    6D+W
+                </div>
+                <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Markstrat 6D Semantic Scales — Weighted Analyzer</h1>
+                        <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                            Magnetix • Sonites
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-400">Зважена модель сприйняття (Importance 1–10 × Шкала 1–7) та симулятор Perceptual Objectives</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+                <!-- Перемикач зваженої та базової моделі -->
+                <div class="flex items-center gap-2.5 bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-xl">
+                    <span id="modeLabelText" class="text-xs font-semibold text-cyan-300">Weighted Distance (Зважена модель)</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="weightedToggle" checked onchange="onModeToggle()" class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+                    </label>
+                </div>
+
+                <!-- Редагування координат -->
+                <button onclick="openCoordsModal()" class="px-3 py-2 text-xs sm:text-sm font-medium rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    <span>Оновити координати</span>
+                </button>
+
+                <!-- Копіювати звіт -->
+                <button onclick="copyDecideSummary()" class="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white transition flex items-center gap-2 shadow-md shadow-emerald-600/20">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    <span class="hidden sm:inline">Копіювати для DECIDE</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Toast сповіщення -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-800 text-white px-4 py-3 rounded-xl shadow-2xl text-sm font-medium flex items-center gap-2.5 border border-slate-700">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span id="toastText">Повідомлення</span>
+        </div>
+    </div>
+
+    <!-- Основний контейнер -->
+    <main class="flex-1 max-w-[1680px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+        <!-- Ліва колонка: Налаштування та Симулятор (4 колонки) -->
+        <aside class="lg:col-span-4 flex flex-col gap-4">
+
+            <!-- Блок 1: Вибір бренду та сегмента -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">1. Бренд та Цільовий Сегмент</h2>
+                    <button onclick="resetSimulation()" class="text-xs font-medium text-cyan-400 hover:text-cyan-300 hover:underline transition">
+                        Скинути симуляцію
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Активний бренд (Magnetix)</label>
+                        <select id="brandSelect" onchange="onBrandOrSegmentChange(true)" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                            <option value="MOST">MOST (Magnetix)</option>
+                            <option value="MOVE">MOVE (Magnetix)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Цільовий сегмент (Ідеал)</label>
+                        <select id="segmentSelect" onchange="onBrandOrSegmentChange(true)" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                            <option value="Gen-Z">Gen-Z</option>
+                            <option value="Millennials">Millennials</option>
+                            <option value="Gen-X">Gen-X</option>
+                            <option value="Baby Boomers">Baby Boomers</option>
+                            <option value="Professionals">Professionals</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Швидкий авто-зсув -->
+                <div class="p-3 rounded-xl bg-cyan-950/35 border border-cyan-500/30">
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <span class="text-xs font-semibold text-cyan-300">Симулятор 1 періоду</span>
+                        <span class="text-[11px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-500/30 font-mono">Топ-2 Weighted • ±0.4</span>
+                    </div>
+                    <button onclick="autoShiftTop2Weighted()" class="w-full py-2.5 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:scale-[0.99] text-slate-950 text-xs sm:text-sm font-bold shadow-md shadow-cyan-600/20 transition flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                        <span>Auto-Shift Top 2 Weighted Gaps (±0.4)</span>
+                    </button>
+                    <p class="text-[11px] text-slate-400 mt-1.5 leading-tight">
+                        Зсуває 2 параметри з найбільшим зваженим впливом (|Δ| × Weight) на 0.4 бала у бік ідеалу сегмента.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Блок 2: Ваги важливості характеристик (Importance 1-10) -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <div>
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">2. Ваги важливості (Importance 1–10)</h2>
+                        <p class="text-[11px] text-slate-500">Загальна сума ваг: <span id="totalWeightsSum" class="font-mono text-slate-300">24.3</span></p>
+                    </div>
+                    <button onclick="resetWeights()" class="text-xs font-medium text-amber-400 hover:text-amber-300 hover:underline">
+                        Reset to Report Weights
+                    </button>
+                </div>
+
+                <div id="weightsContainer" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-2 mt-3">
+                    <!-- Заповнюється через JS -->
+                </div>
+            </div>
+
+            <!-- Блок 3: 6D Симулятор координат бренду (1-7) -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">3. Симулятор координат (1.0 – 7.0)</h2>
+                    <span class="text-[11px] text-slate-500">Тест ціни / реклами / R&D</span>
+                </div>
+
+                <div id="slidersContainer" class="space-y-2.5">
+                    <!-- Заповнюється через JS -->
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Права колонка: Аналітика, Рекомендації DECIDE, Графіки та Таблиця (8 колонок) -->
+        <section class="lg:col-span-8 flex flex-col gap-4">
+
+            <!-- Верхній ряд: KPI картки + Розумний блок DECIDE -->
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+
+                <!-- KPI картки (5 колонок) -->
+                <div class="xl:col-span-5 bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span id="kpiModelTitle" class="text-xs font-bold uppercase tracking-wider text-cyan-400">Зважені метрики (Weighted 6D)</span>
+                            <span id="pairBadge" class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-200 border border-slate-700">MOST → Gen-Z</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 mt-3">
+                            <div class="p-3 rounded-xl bg-slate-800/70 border border-slate-700/70">
+                                <div id="distMetricLabel" class="text-[11px] text-slate-400">Weighted 6D Distance</div>
+                                <div class="flex items-baseline gap-2 mt-1">
+                                    <span id="kpiSimDist" class="text-2xl font-bold font-mono text-white">5.67</span>
+                                    <span id="kpiDeltaDist" class="text-xs font-semibold font-mono text-slate-400">0.00</span>
+                                </div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">Початкова: <span id="kpiOrigDist" class="font-mono">5.67</span></div>
+                            </div>
+
+                            <div class="p-3 rounded-xl bg-slate-800/70 border border-slate-700/70">
+                                <div id="simMetricLabel" class="text-[11px] text-slate-400">Weighted Similarity Index</div>
+                                <div class="flex items-baseline gap-2 mt-1">
+                                    <span id="kpiSimIdx" class="text-2xl font-bold font-mono text-emerald-400">92.4%</span>
+                                    <span id="kpiDeltaIdx" class="text-xs font-semibold font-mono text-slate-400">0.0%</span>
+                                </div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">Ранг у сегменті: <span id="kpiRank" class="text-cyan-400 font-bold">#1 з 8</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 pt-2.5 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                        <span>Базова (Unweighted) відстань:</span>
+                        <span id="unweightedRefDist" class="font-mono text-slate-300">2.59 (Sim: 82.4%)</span>
+                    </div>
+                </div>
+
+                <!-- Розумний блок DECIDE Recommendations (7 колонок) -->
+                <div class="xl:col-span-7 bg-slate-900 rounded-2xl border border-amber-500/30 p-4 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-amber-300">Smart DECIDE Recommendation (Топ-2 Weighted Impact)</h3>
+                            </div>
+                            <span class="text-[11px] font-mono text-slate-400">Impact = |Brand − Ideal| × Weight</span>
+                        </div>
+
+                        <div id="decideCardsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                            <!-- Генерується через JS -->
+                        </div>
+                    </div>
+
+                    <!-- Стратегічна примітка про Price vs Perceptual Objectives -->
+                    <div id="priceStrategyNotice" class="mt-3 p-2.5 rounded-xl bg-amber-950/30 border border-amber-500/25 text-[11px] text-amber-200/90 leading-relaxed flex items-start gap-2">
+                        <svg class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span id="priceNoticeText">
+                            <strong>Порада для DECIDE:</strong> Вісь <strong>Price</strong> (вага 10.0) найкраще та найшвидше коригується прямою зміною ціни в <em>Marketing Mix</em>, тоді як у <em>Perceptual Objectives</em> варто вказувати нецінові характеристики (наприклад, <em>Display</em> та <em>Design</em>).
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Середній ряд: 3D Графік + (Радар & Графік зваженого впливу) -->
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+
+                <!-- 3D Семантичний Куб (7 колонок) -->
+                <div class="xl:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-sm flex flex-col">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <div>
+                            <h3 class="text-sm font-bold text-white">Інтерактивна 3D-проєкція (шкала 1–7)</h3>
+                            <p id="cubeAxesSubtitle" class="text-xs text-slate-400">Осі: Price × Display × Design</p>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <select id="axisX" onchange="updateAll()" title="Вісь X" class="rounded-lg bg-slate-800 border border-slate-700 px-2 py-1 text-xs font-semibold text-cyan-300 focus:outline-none"></select>
+                            <select id="axisY" onchange="updateAll()" title="Вісь Y" class="rounded-lg bg-slate-800 border border-slate-700 px-2 py-1 text-xs font-semibold text-emerald-300 focus:outline-none"></select>
+                            <select id="axisZ" onchange="updateAll()" title="Вісь Z" class="rounded-lg bg-slate-800 border border-slate-700 px-2 py-1 text-xs font-semibold text-amber-300 focus:outline-none"></select>
+                        </div>
+                    </div>
+                    <div id="semantic3dPlot" class="w-full h-[390px] sm:h-[430px] rounded-xl overflow-hidden"></div>
+                </div>
+
+                <!-- Права підколонка: 6D Radar + Weighted Impact Bar Chart (5 колонок) -->
+                <div class="xl:col-span-5 flex flex-col gap-4">
+                    <!-- 6-осьовий Radar Chart -->
+                    <div class="bg-slate-900 rounded-2xl border border-slate-800 p-3.5 shadow-sm">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">6-осьовий профіль (Бренд vs Ідеал)</h3>
+                        <div id="radarPlot" class="w-full h-[220px]"></div>
+                    </div>
+
+                    <!-- Горизонтальний бар-чарт Weighted Impact -->
+                    <div class="bg-slate-900 rounded-2xl border border-slate-800 p-3.5 shadow-sm">
+                        <div class="flex items-center justify-between mb-1">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Weighted Impact по атрибутах (|Δ| × Weight)</h3>
+                            <span class="text-[10px] text-slate-400">Пріоритет виправлення</span>
+                        </div>
+                        <div id="impactBarPlot" class="w-full h-[180px]"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Нижній ряд: Повна таблиця конкурентного рейтингу -->
+            <div class="bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-sm overflow-hidden">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div>
+                        <h3 class="text-sm font-bold text-white">Конкурентний рейтинг у сегменті <span id="tableSegmentName" class="text-amber-400">Gen-Z</span></h3>
+                        <p class="text-xs text-slate-400">Порівняння зваженої (Weighted) та базової (Unweighted) 6D-відстані для всіх 8 брендів</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-slate-400">
+                                <th class="py-2 pr-2 font-semibold">#</th>
+                                <th class="py-2 px-2 font-semibold">Бренд (Фірма)</th>
+                                <th class="py-2 px-2 font-semibold text-right">Price <span class="text-[10px] text-cyan-400">(10)</span></th>
+                                <th class="py-2 px-2 font-semibold text-right">Proc. <span class="text-[10px] text-cyan-400">(5.8)</span></th>
+                                <th class="py-2 px-2 font-semibold text-right">Display <span class="text-[10px] text-cyan-400">(3.1)</span></th>
+                                <th class="py-2 px-2 font-semibold text-right">Design <span class="text-[10px] text-cyan-400">(2.7)</span></th>
+                                <th class="py-2 px-2 font-semibold text-right">Battery <span class="text-[10px] text-cyan-400">(1.5)</span></th>
+                                <th class="py-2 px-2 font-semibold text-right">Feat. <span class="text-[10px] text-cyan-400">(1.2)</span></th>
+                                <th class="py-2 px-2 font-semibold text-right text-slate-400">Unweighted D</th>
+                                <th class="py-2 px-2 font-semibold text-right text-white">Weighted D</th>
+                                <th class="py-2 pl-2 font-semibold text-right text-emerald-400">Sim. Index</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rankingTableBody" class="divide-y divide-slate-800/60">
+                            <!-- Заповнюється через JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Модальне вікно для оновлення координат брендів та сегментів -->
+    <div id="coordsModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full max-h-[88vh] flex flex-col shadow-2xl">
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-white">Редагування координат Semantic Scales (1.0 – 7.0)</h3>
+                    <p class="text-xs text-slate-400">Оновлюйте дані зі звіту Market Research після кожного періоду</p>
+                </div>
+                <button onclick="closeCoordsModal()" class="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="p-4 overflow-y-auto space-y-6 text-xs">
+                <div>
+                    <h4 class="font-bold text-sm text-cyan-400 mb-2">Brand Perceptions (Бренди)</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-400">
+                                    <th class="py-1.5">Бренд</th>
+                                    <th class="py-1.5 text-center">Price</th>
+                                    <th class="py-1.5 text-center">Proc. Power</th>
+                                    <th class="py-1.5 text-center">Display</th>
+                                    <th class="py-1.5 text-center">Design</th>
+                                    <th class="py-1.5 text-center">Battery</th>
+                                    <th class="py-1.5 text-center"># Features</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modalBrandsBody" class="divide-y divide-slate-800/60"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-sm text-amber-400 mb-2">Ideal Values (Ідеальні точки сегментів)</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-400">
+                                    <th class="py-1.5">Сегмент</th>
+                                    <th class="py-1.5 text-center">Price</th>
+                                    <th class="py-1.5 text-center">Proc. Power</th>
+                                    <th class="py-1.5 text-center">Display</th>
+                                    <th class="py-1.5 text-center">Design</th>
+                                    <th class="py-1.5 text-center">Battery</th>
+                                    <th class="py-1.5 text-center"># Features</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modalSegmentsBody" class="divide-y divide-slate-800/60"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-800 flex justify-end gap-2">
+                <button onclick="closeCoordsModal()" class="px-4 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition">Скасувати</button>
+                <button onclick="saveModalCoords()" class="px-4 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-slate-950 transition">Зберегти та перерахувати</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 6 характеристик у порядку спадання важливості зі звіту Importance of characteristics
+        const DIMENSIONS = [
+            { key: 'price',     label: 'Price',       short: 'Price',       defaultWeight: 10.0, color: '#06b6d4' },
+            { key: 'procPower', label: 'Proc. Power', short: 'Proc. Power', defaultWeight: 5.8,  color: '#10b981' },
+            { key: 'display',   label: 'Display',     short: 'Display',     defaultWeight: 3.1,  color: '#a855f7' },
+            { key: 'design',    label: 'Design',      short: 'Design',      defaultWeight: 2.7,  color: '#f43f5e' },
+            { key: 'battery',   label: 'Battery',     short: 'Battery',     defaultWeight: 1.5,  color: '#f59e0b' },
+            { key: 'features',  label: '# Features',  short: '# Features',  defaultWeight: 1.2,  color: '#38bdf8' }
+        ];
+
+        // Точні дані Brand Perceptions (1-7)
+        let brandsData = [
+            { id: 'MOST', name: 'MOST', firm: 'Magnetix', isOurs: true,  features: 2.1, design: 2.3, battery: 3.3, display: 1.6, procPower: 1.5, price: 2.5 },
+            { id: 'MOVE', name: 'MOVE', firm: 'Magnetix', isOurs: true,  features: 4.3, design: 1.6, battery: 5.9, display: 3.1, procPower: 3.2, price: 5.1 },
+            { id: 'ROCK', name: 'ROCK', firm: 'REVO',     isOurs: false, features: 4.7, design: 6.4, battery: 6.5, display: 5.9, procPower: 5.4, price: 6.1 },
+            { id: 'ROLL', name: 'ROLL', firm: 'REVO',     isOurs: false, features: 4.3, design: 1.6, battery: 5.6, display: 6.5, procPower: 6.5, price: 6.4 },
+            { id: 'SOFT', name: 'SOFT', firm: 'Synergy',  isOurs: false, features: 1.7, design: 1.6, battery: 3.3, display: 1.6, procPower: 1.5, price: 2.3 },
+            { id: 'SOLO', name: 'SOLO', firm: 'Synergy',  isOurs: false, features: 1.7, design: 3.2, battery: 4.0, display: 2.1, procPower: 2.9, price: 4.5 },
+            { id: 'TONE', name: 'TONE', firm: 'Together', isOurs: false, features: 5.5, design: 6.5, battery: 5.3, display: 4.4, procPower: 5.4, price: 6.3 },
+            { id: 'TOPS', name: 'TOPS', firm: 'Together', isOurs: false, features: 2.9, design: 1.6, battery: 1.8, display: 6.4, procPower: 6.2, price: 5.2 }
+        ];
+
+        // Точні дані Segment Ideal Values (1-7)
+        let segmentsData = [
+            { id: 'Gen-Z',         name: 'Gen-Z',         features: 2.5, design: 3.9, battery: 1.8, display: 2.6, procPower: 2.2, price: 2.1 },
+            { id: 'Millennials',   name: 'Millennials',   features: 1.8, design: 5.1, battery: 2.9, display: 4.1, procPower: 3.9, price: 3.1 },
+            { id: 'Gen-X',         name: 'Gen-X',         features: 3.3, design: 6.4, battery: 3.6, display: 4.6, procPower: 4.8, price: 5.6 },
+            { id: 'Baby Boomers',  name: 'Baby Boomers',  features: 4.7, design: 1.8, battery: 6.0, display: 6.0, procPower: 6.3, price: 3.5 },
+            { id: 'Professionals', name: 'Professionals', features: 5.6, design: 5.9, battery: 5.1, display: 5.5, procPower: 5.3, price: 5.0 }
+        ];
+
+        // Стан додатку
+        let state = {
+            useWeighted: true,
+            brandId: 'MOST',
+            segmentId: 'Gen-Z',
+            weights: { price: 10.0, procPower: 5.8, display: 3.1, design: 2.7, battery: 1.5, features: 1.2 },
+            simCoords: { features: 2.1, design: 2.3, battery: 3.3, display: 1.6, procPower: 1.5, price: 2.5 },
+            axisX: 'price',
+            axisY: 'procPower',
+            axisZ: 'design'
+        };
+
+        let lastDecideReportText = '';
+
+        // Ініціалізація
+        window.addEventListener('DOMContentLoaded', () => {
+            buildWeightsUI();
+            buildSlidersUI();
+            buildAxisSelectors();
+            onBrandOrSegmentChange(true);
+        });
+
+        // Побудова полів редагування ваг важливості (1-10)
+        function buildWeightsUI() {
+            const container = document.getElementById('weightsContainer');
+            container.innerHTML = '';
+
+            DIMENSIONS.forEach(dim => {
+                const wVal = state.weights[dim.key];
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-2 rounded-xl bg-slate-800/60 border border-slate-800';
+                div.innerHTML = `
+                    <span class="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full" style="background-color: ${dim.color}"></span>
+                        ${dim.label}
+                    </span>
+                    <input type="number" id="w_in_${dim.key}" min="0" max="10" step="0.1" value="${wVal.toFixed(1)}"
+                        oninput="onWeightChange('${dim.key}', this.value)"
+                        class="w-16 text-right font-mono text-xs font-bold rounded-lg bg-slate-900 border border-slate-700 px-2 py-1 text-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function onWeightChange(key, val) {
+            let num = parseFloat(val);
+            if (isNaN(num) || num < 0) num = 0;
+            if (num > 10) num = 10;
+            state.weights[key] = num;
+            updateAll();
+        }
+
+        function resetWeights() {
+            DIMENSIONS.forEach(dim => {
+                state.weights[dim.key] = dim.defaultWeight;
+                document.getElementById(`w_in_${dim.key}`).value = dim.defaultWeight.toFixed(1);
+            });
+            updateAll();
+            showToast('Ваги важливості відновлено за звітом Markstrat');
+        }
+
+        // Побудова 6 повзунків симуляції координат (1-7)
+        function buildSlidersUI() {
+            const container = document.getElementById('slidersContainer');
+            container.innerHTML = '';
+
+            DIMENSIONS.forEach(dim => {
+                const div = document.createElement('div');
+                div.className = 'p-2.5 rounded-xl bg-slate-800/45 border border-slate-800';
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full" style="background-color: ${dim.color}"></span>
+                            ${dim.label}
+                            <span id="w_tag_${dim.key}" class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">W:${dim.defaultWeight.toFixed(1)}</span>
+                        </span>
+                        <div class="flex items-center gap-2">
+                            <span id="orig_lbl_${dim.key}" class="text-[11px] font-mono text-slate-400">Факт: 2.5</span>
+                            <input type="number" id="num_${dim.key}" min="1" max="7" step="0.1" value="2.5"
+                                oninput="onCoordInput('${dim.key}', this.value)"
+                                class="w-16 text-right font-mono text-xs font-bold rounded-lg bg-slate-900 border border-slate-700 px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                        </div>
+                    </div>
+                    <input type="range" id="rng_${dim.key}" min="1" max="7" step="0.1" value="2.5"
+                        oninput="onCoordRange('${dim.key}', this.value)"
+                        class="w-full h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function buildAxisSelectors() {
+            ['axisX', 'axisY', 'axisZ'].forEach(id => {
+                const sel = document.getElementById(id);
+                sel.innerHTML = '';
+                DIMENSIONS.forEach(dim => {
+                    const opt = document.createElement('option');
+                    opt.value = dim.key;
+                    opt.textContent = dim.short;
+                    sel.appendChild(opt);
+                });
+            });
+        }
+
+        function onModeToggle() {
+            state.useWeighted = document.getElementById('weightedToggle').checked;
+            const lbl = document.getElementById('modeLabelText');
+            if (state.useWeighted) {
+                lbl.textContent = 'Weighted Distance (Зважена модель)';
+                lbl.className = 'text-xs font-semibold text-cyan-300';
+            } else {
+                lbl.textContent = 'Unweighted (Базова 6D)';
+                lbl.className = 'text-xs font-semibold text-slate-300';
+            }
+            updateAll();
+        }
+
+        function onBrandOrSegmentChange(autoAxes = true) {
+            state.brandId = document.getElementById('brandSelect').value;
+            state.segmentId = document.getElementById('segmentSelect').value;
+
+            const brand = brandsData.find(b => b.id === state.brandId);
+            if (!brand) return;
+
+            DIMENSIONS.forEach(dim => {
+                state.simCoords[dim.key] = brand[dim.key];
+                document.getElementById(`orig_lbl_${dim.key}`).textContent = `Факт: ${brand[dim.key].toFixed(1)}`;
+            });
+
+            syncSlidersFromState();
+
+            if (autoAxes) {
+                selectTop3WeightedAxes();
+            }
+            updateAll();
+        }
+
+        function syncSlidersFromState() {
+            DIMENSIONS.forEach(dim => {
+                const v = state.simCoords[dim.key];
+                document.getElementById(`num_${dim.key}`).value = v.toFixed(1);
+                document.getElementById(`rng_${dim.key}`).value = v;
+            });
+        }
+
+        function onCoordRange(key, val) {
+            state.simCoords[key] = parseFloat(val);
+            document.getElementById(`num_${key}`).value = state.simCoords[key].toFixed(1);
+            updateAll();
+        }
+
+        function onCoordInput(key, val) {
+            let num = parseFloat(val);
+            if (isNaN(num)) num = 1.0;
+            num = Math.max(1.0, Math.min(7.0, num));
+            state.simCoords[key] = Number(num.toFixed(1));
+            document.getElementById(`rng_${key}`).value = state.simCoords[key];
+            updateAll();
+        }
+
+        function resetSimulation() {
+            onBrandOrSegmentChange(false);
+            showToast('Координати симуляції скинуто до фактичних');
+        }
+
+        // Автоматичний вибір 3 осей із найбільшим Weighted Impact для 3D-графіка
+        function selectTop3WeightedAxes() {
+            const brand = brandsData.find(b => b.id === state.brandId);
+            const seg = segmentsData.find(s => s.id === state.segmentId);
+            if (!brand || !seg) return;
+
+            const sorted = [...DIMENSIONS].sort((a, b) => {
+                const impA = Math.abs(brand[a.key] - seg[a.key]) * (state.useWeighted ? state.weights[a.key] : 1);
+                const impB = Math.abs(brand[b.key] - seg[b.key]) * (state.useWeighted ? state.weights[b.key] : 1);
+                return impB - impA;
+            });
+
+            state.axisX = sorted[0].key;
+            state.axisY = sorted[1].key;
+            state.axisZ = sorted[2].key;
+
+            document.getElementById('axisX').value = state.axisX;
+            document.getElementById('axisY').value = state.axisY;
+            document.getElementById('axisZ').value = state.axisZ;
+        }
+
+        // Авто-зсув на ±0.4 по 2 характеристиках з найбільшим Weighted Impact
+        function autoShiftTop2Weighted() {
+            const brand = brandsData.find(b => b.id === state.brandId);
+            const seg = segmentsData.find(s => s.id === state.segmentId);
+            if (!brand || !seg) return;
+
+            // Повертаємось до факту перед застосуванням кроку на 1 період
+            DIMENSIONS.forEach(dim => {
+                state.simCoords[dim.key] = brand[dim.key];
+            });
+
+            const ranked = DIMENSIONS.map(dim => {
+                const diff = seg[dim.key] - brand[dim.key];
+                const absDiff = Math.abs(diff);
+                const w = state.useWeighted ? state.weights[dim.key] : 1;
+                return { key: dim.key, label: dim.label, diff, absDiff, weightedImpact: absDiff * w };
+            }).sort((a, b) => b.weightedImpact - a.weightedImpact);
+
+            const top2 = ranked.slice(0, 2);
+            top2.forEach(item => {
+                if (item.absDiff > 0) {
+                    const step = Math.min(0.4, item.absDiff) * Math.sign(item.diff);
+                    const nextVal = Math.max(1.0, Math.min(7.0, brand[item.key] + step));
+                    state.simCoords[item.key] = Number(nextVal.toFixed(1));
+                }
+            });
+
+            syncSlidersFromState();
+            updateAll();
+            showToast(`Зсунуто ${top2[0].label} та ${top2[1].label} на ±0.4 до ідеалу ${seg.name}`);
+        }
+
+        // Розрахунок базової (Unweighted) 6D-відстані
+        function calcUnweightedDistance(objA, objB) {
+            let sumSq = 0;
+            DIMENSIONS.forEach(dim => {
+                const d = (objA[dim.key] || 0) - (objB[dim.key] || 0);
+                sumSq += d * d;
+            });
+            return Math.sqrt(sumSq);
+        }
+
+        // Розрахунок зваженої (Weighted) 6D-відстані: sqrt( sum( (w_i * (x_i - y_i))^2 ) )
+        function calcWeightedDistance(objA, objB) {
+            let sumSq = 0;
+            DIMENSIONS.forEach(dim => {
+                const w = state.weights[dim.key] || 0;
+                const d = (objA[dim.key] || 0) - (objB[dim.key] || 0);
+                sumSq += Math.pow(w * d, 2);
+            });
+            return Math.sqrt(sumSq);
+        }
+
+        // Максимальна можлива відстань на шкалі [1..7] (дельта = 6 по кожній осі)
+        function getMaxDistance(isWeighted) {
+            if (!isWeighted) {
+                return Math.sqrt(6 * 36); // 14.6969
+            }
+            let sumSq = 0;
+            DIMENSIONS.forEach(dim => {
+                const w = state.weights[dim.key] || 0;
+                sumSq += Math.pow(w * 6, 2);
+            });
+            return Math.sqrt(sumSq) || 1;
+        }
+
+        function calcSimilarityIndex(dist, isWeighted) {
+            const maxD = getMaxDistance(isWeighted);
+            const idx = (1 - dist / maxD) * 100;
+            return Math.max(0, Math.min(100, idx));
+        }
+
+        // Головна функція оновлення всіх розрахунків та графіків
+        function updateAll() {
+            state.axisX = document.getElementById('axisX').value;
+            state.axisY = document.getElementById('axisY').value;
+            state.axisZ = document.getElementById('axisZ').value;
+
+            // Оновлення суми ваг та бейджів на слайдерах
+            const sumW = DIMENSIONS.reduce((acc, d) => acc + (state.weights[d.key] || 0), 0);
+            document.getElementById('totalWeightsSum').textContent = sumW.toFixed(1);
+            DIMENSIONS.forEach(dim => {
+                const tag = document.getElementById(`w_tag_${dim.key}`);
+                if (tag) tag.textContent = `W:${(state.weights[dim.key] || 0).toFixed(1)}`;
+            });
+
+            const brand = brandsData.find(b => b.id === state.brandId);
+            const seg = segmentsData.find(s => s.id === state.segmentId);
+            if (!brand || !seg) return;
+
+            const isModified = DIMENSIONS.some(dim => Math.abs(state.simCoords[dim.key] - brand[dim.key]) > 0.01);
+
+            // Обчислення метрик залежно від активного режиму (Weighted vs Unweighted)
+            const distFn = state.useWeighted ? calcWeightedDistance : calcUnweightedDistance;
+            const origDist = distFn(brand, seg);
+            const simDist = distFn(state.simCoords, seg);
+            const deltaDist = simDist - origDist;
+
+            const origIdx = calcSimilarityIndex(origDist, state.useWeighted);
+            const simIdx = calcSimilarityIndex(simDist, state.useWeighted);
+            const deltaIdx = simIdx - origIdx;
+
+            // Довідкова базова (Unweighted) відстань
+            const unWSimDist = calcUnweightedDistance(state.simCoords, seg);
+            const unWSimIdx = calcSimilarityIndex(unWSimDist, false);
+
+            document.getElementById('kpiModelTitle').textContent = state.useWeighted ? 'Зважені метрики (Weighted 6D)' : 'Базові метрики (Unweighted 6D)';
+            document.getElementById('distMetricLabel').textContent = state.useWeighted ? 'Weighted 6D Distance' : 'Unweighted 6D Distance';
+            document.getElementById('simMetricLabel').textContent = state.useWeighted ? 'Weighted Similarity Index' : 'Base Similarity Index';
+            document.getElementById('pairBadge').textContent = `${brand.name} → ${seg.name}`;
+
+            document.getElementById('kpiOrigDist').textContent = origDist.toFixed(2);
+            document.getElementById('kpiSimDist').textContent = simDist.toFixed(2);
+
+            const deltaDistEl = document.getElementById('kpiDeltaDist');
+            deltaDistEl.textContent = (deltaDist > 0 ? '+' : '') + deltaDist.toFixed(2);
+            deltaDistEl.className = `text-xs font-semibold font-mono ${deltaDist < -0.01 ? 'text-emerald-400' : (deltaDist > 0.01 ? 'text-rose-400' : 'text-slate-400')}`;
+
+            document.getElementById('kpiSimIdx').textContent = simIdx.toFixed(1) + '%';
+            const deltaIdxEl = document.getElementById('kpiDeltaIdx');
+            deltaIdxEl.textContent = (deltaIdx > 0 ? '+' : '') + deltaIdx.toFixed(1) + '%';
+            deltaIdxEl.className = `text-xs font-semibold font-mono ${deltaIdx > 0.01 ? 'text-emerald-400' : (deltaIdx < -0.01 ? 'text-rose-400' : 'text-slate-400')}`;
+
+            document.getElementById('unweightedRefDist').textContent = `${unWSimDist.toFixed(2)} (Sim: ${unWSimIdx.toFixed(1)}%)`;
+
+            // Оновлення блоку рекомендацій DECIDE
+            const rankedImpacts = renderDecideRecommendations(brand, seg);
+
+            // Оновлення таблиці рейтингу
+            renderRankingTable(brand, seg, isModified);
+
+            // Оновлення графіків
+            render3DCube(brand, seg, isModified);
+            renderRadarChart(brand, seg, isModified);
+            renderImpactBarChart(rankedImpacts);
+        }
+
+        // Розрахунок Weighted Impact = |Brand - Ideal| * Weight та вивід Топ-2 пріоритетів
+        function renderDecideRecommendations(brand, seg) {
+            const container = document.getElementById('decideCardsContainer');
+            container.innerHTML = '';
+
+            const impacts = DIMENSIONS.map(dim => {
+                const cur = brand[dim.key];
+                const ideal = seg[dim.key];
+                const diff = ideal - cur;
+                const absDiff = Math.abs(diff);
+                const weight = state.weights[dim.key] || 0;
+                const weightedImpact = absDiff * weight;
+                const step = Math.min(0.4, absDiff) * Math.sign(diff);
+                const targetObj = Number(Math.max(1.0, Math.min(7.0, cur + step)).toFixed(1));
+
+                return {
+                    ...dim,
+                    cur,
+                    ideal,
+                    diff,
+                    absDiff,
+                    weight,
+                    weightedImpact,
+                    targetObj
+                };
+            }).sort((a, b) => b.weightedImpact - a.weightedImpact);
+
+            const top2 = impacts.slice(0, 2);
+
+            top2.forEach((item, idx) => {
+                const isPrice = item.key === 'price';
+                const actionTag = isPrice
+                    ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Змінити ціну (Mix)</span>'
+                    : '<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Perceptual Obj.</span>';
+
+                const card = document.createElement('div');
+                card.className = 'p-3 rounded-xl bg-slate-800/75 border border-slate-700/80 flex flex-col justify-between';
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <span class="text-xs font-bold text-white">${idx + 1}. ${item.label} <span class="text-[11px] font-mono text-slate-400">(W=${item.weight.toFixed(1)})</span></span>
+                        ${actionTag}
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+                        <span>Impact: <strong class="font-mono text-amber-300">${item.weightedImpact.toFixed(2)}</strong></span>
+                        <span>Δ: <strong class="font-mono text-slate-200">${item.diff >= 0 ? '+' : ''}${item.diff.toFixed(1)}</strong></span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs pt-1.5 border-t border-slate-700/60">
+                        <span class="text-slate-400">Факт: <strong class="font-mono text-white">${item.cur.toFixed(1)}</strong> → Ідеал: <strong class="font-mono text-white">${item.ideal.toFixed(1)}</strong></span>
+                        <span class="text-emerald-400 font-bold font-mono">Ціль: ${item.targetObj.toFixed(1)}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            // Динамічна підказка про Price vs Perceptual Objectives
+            const nonPriceTop2 = impacts.filter(i => i.key !== 'price').slice(0, 2);
+            const hasPriceInTop2 = top2.some(i => i.key === 'price');
+            const noticeEl = document.getElementById('priceNoticeText');
+
+            if (hasPriceInTop2) {
+                noticeEl.innerHTML = `<strong>Порада для DECIDE:</strong> <strong>Price</strong> входить у Топ-2 за впливом, але в симуляції вісь Price найкраще рухати прямою зміною ціни в <em>Marketing Mix</em>. Для полів <em>Perceptual Objectives</em> (де дозволено до 2 нецінових шкал) оберіть <strong>${nonPriceTop2[0].label}</strong> (ціль ${nonPriceTop2[0].targetObj.toFixed(1)}) та <strong>${nonPriceTop2[1].label}</strong> (ціль ${nonPriceTop2[1].targetObj.toFixed(1)}).`;
+            } else {
+                noticeEl.innerHTML = `<strong>Порада для DECIDE:</strong> Обидва пріоритети (<strong>${top2[0].label}</strong> та <strong>${top2[1].label}</strong>) є неціновими атрибутами — сміливо вносьте їх безпосередньо в <em>Perceptual Objectives</em> із цілями <strong>${top2[0].targetObj.toFixed(1)}</strong> та <strong>${top2[1].targetObj.toFixed(1)}</strong>.`;
+            }
+
+            // Формування звіту для буфера обміну
+            lastDecideReportText = `MARKSTRAT DECIDE — WEIGHTED SEMANTIC ANALYSIS\n` +
+                `Бренд: ${brand.name} | Цільовий сегмент: ${seg.name}\n` +
+                `Weighted 6D Distance: ${calcWeightedDistance(brand, seg).toFixed(2)} (Similarity: ${calcSimilarityIndex(calcWeightedDistance(brand, seg), true).toFixed(1)}%)\n\n` +
+                `ТОП-2 ЗА ЗВАЖЕНИМ ВПЛИВОМ (|Δ| × Weight):\n` +
+                top2.map((t, i) => `${i + 1}) ${t.label} (W=${t.weight.toFixed(1)}): Impact = ${t.weightedImpact.toFixed(2)} | Факт ${t.cur.toFixed(1)} -> Ціль ${t.targetObj.toFixed(1)} (Ідеал: ${t.ideal.toFixed(1)})`).join('\n') +
+                `\n\nРекомендація для Perceptual Objectives (нецінові осі): ${nonPriceTop2[0].label} (${nonPriceTop2[0].targetObj.toFixed(1)}) та ${nonPriceTop2[1].label} (${nonPriceTop2[1].targetObj.toFixed(1)}).`;
+
+            return impacts;
+        }
+
+        // Таблиця конкурентного рейтингу
+        function renderRankingTable(activeBrand, seg, isModified) {
+            document.getElementById('tableSegmentName').textContent = seg.name;
+            const tbody = document.getElementById('rankingTableBody');
+            tbody.innerHTML = '';
+
+            const list = brandsData.map(b => {
+                const coords = (b.id === activeBrand.id && isModified) ? state.simCoords : b;
+                const wDist = calcWeightedDistance(coords, seg);
+                const uDist = calcUnweightedDistance(coords, seg);
+                const activeDist = state.useWeighted ? wDist : uDist;
+                const simIdx = calcSimilarityIndex(activeDist, state.useWeighted);
+
+                return {
+                    ...b,
+                    c: coords,
+                    wDist,
+                    uDist,
+                    activeDist,
+                    simIdx,
+                    isActive: b.id === activeBrand.id
+                };
+            }).sort((a, b) => a.activeDist - b.activeDist);
+
+            const rank = list.findIndex(item => item.isActive) + 1;
+            document.getElementById('kpiRank').textContent = `#${rank} з ${list.length}`;
+
+            list.forEach((item, index) => {
+                const c = item.c;
+                const tr = document.createElement('tr');
+                if (item.isActive) {
+                    tr.className = 'bg-cyan-950/45 font-semibold text-white';
+                } else if (item.isOurs) {
+                    tr.className = 'bg-slate-800/40 text-slate-200';
+                } else {
+                    tr.className = 'hover:bg-slate-800/30 text-slate-300';
+                }
+
+                tr.innerHTML = `
+                    <td class="py-2.5 pr-2 text-slate-400 font-mono">${index + 1}</td>
+                    <td class="py-2.5 px-2">
+                        <span class="font-bold">${item.name}</span>
+                        ${item.isActive && isModified ? '<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">План</span>' : ''}
+                        <span class="ml-1 text-[10px] px-1.5 py-0.5 rounded ${item.isOurs ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-800 text-slate-400'}">${item.firm}</span>
+                    </td>
+                    <td class="py-2.5 px-2 text-right font-mono">${c.price.toFixed(1)}</td>
+                    <td class="py-2.5 px-2 text-right font-mono">${c.procPower.toFixed(1)}</td>
+                    <td class="py-2.5 px-2 text-right font-mono">${c.display.toFixed(1)}</td>
+                    <td class="py-2.5 px-2 text-right font-mono">${c.design.toFixed(1)}</td>
+                    <td class="py-2.5 px-2 text-right font-mono">${c.battery.toFixed(1)}</td>
+                    <td class="py-2.5 px-2 text-right font-mono">${c.features.toFixed(1)}</td>
+                    <td class="py-2.5 px-2 text-right font-mono text-slate-400">${item.uDist.toFixed(2)}</td>
+                    <td class="py-2.5 px-2 text-right font-mono font-bold text-white">${item.wDist.toFixed(2)}</td>
+                    <td class="py-2.5 pl-2 text-right font-mono font-bold text-emerald-400">${item.simIdx.toFixed(1)}%</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 3D Scatter Plot (Plotly)
+        function render3DCube(activeBrand, targetSeg, isModified) {
+            const dimX = DIMENSIONS.find(d => d.key === state.axisX);
+            const dimY = DIMENSIONS.find(d => d.key === state.axisY);
+            const dimZ = DIMENSIONS.find(d => d.key === state.axisZ);
+
+            document.getElementById('cubeAxesSubtitle').textContent = `Осі: ${dimX.label} (X) × ${dimY.label} (Y) × ${dimZ.label} (Z)`;
+
+            const traces = [];
+
+            // 1. Наші бренди Magnetix
+            const ourBrands = brandsData.filter(b => b.isOurs);
+            traces.push({
+                type: 'scatter3d',
+                mode: 'markers+text',
+                name: 'Magnetix (MOST, MOVE)',
+                x: ourBrands.map(b => b[dimX.key]),
+                y: ourBrands.map(b => b[dimY.key]),
+                z: ourBrands.map(b => b[dimZ.key]),
+                text: ourBrands.map(b => b.name),
+                textposition: 'top center',
+                textfont: { size: 12, color: '#22d3ee', family: 'Inter, sans-serif' },
+                marker: {
+                    size: 10,
+                    color: '#06b6d4',
+                    symbol: 'circle',
+                    line: { color: '#ffffff', width: 2 }
+                },
+                hovertemplate: `<b>%{text} (Magnetix)</b><br>${dimX.short}: %{x}<br>${dimY.short}: %{y}<br>${dimZ.short}: %{z}<extra></extra>`
+            });
+
+            // 2. Конкуренти
+            const comps = brandsData.filter(b => !b.isOurs);
+            traces.push({
+                type: 'scatter3d',
+                mode: 'markers+text',
+                name: 'Конкуренти',
+                x: comps.map(b => b[dimX.key]),
+                y: comps.map(b => b[dimY.key]),
+                z: comps.map(b => b[dimZ.key]),
+                text: comps.map(b => `${b.name} (${b.firm})`),
+                textposition: 'top center',
+                textfont: { size: 10, color: '#94a3b8' },
+                marker: {
+                    size: 7,
+                    color: '#64748b',
+                    opacity: 0.85,
+                    symbol: 'circle'
+                },
+                hovertemplate: `<b>%{text}</b><br>${dimX.short}: %{x}<br>${dimY.short}: %{y}<br>${dimZ.short}: %{z}<extra></extra>`
+            });
+
+            // 3. Інші сегменти
+            const otherSegs = segmentsData.filter(s => s.id !== targetSeg.id);
+            traces.push({
+                type: 'scatter3d',
+                mode: 'markers+text',
+                name: 'Інші сегменти',
+                x: otherSegs.map(s => s[dimX.key]),
+                y: otherSegs.map(s => s[dimY.key]),
+                z: otherSegs.map(s => s[dimZ.key]),
+                text: otherSegs.map(s => s.name),
+                textposition: 'bottom center',
+                textfont: { size: 10, color: '#34d399' },
+                marker: {
+                    size: 7,
+                    color: '#10b981',
+                    symbol: 'diamond',
+                    opacity: 0.75
+                },
+                hovertemplate: `<b>Сегмент: %{text}</b><br>${dimX.short}: %{x}<br>${dimY.short}: %{y}<br>${dimZ.short}: %{z}<extra></extra>`
+            });
+
+            // 4. Цільовий сегмент
+            traces.push({
+                type: 'scatter3d',
+                mode: 'markers+text',
+                name: `Ідеал: ${targetSeg.name}`,
+                x: [targetSeg[dimX.key]],
+                y: [targetSeg[dimY.key]],
+                z: [targetSeg[dimZ.key]],
+                text: [`★ ${targetSeg.name}`],
+                textposition: 'bottom center',
+                textfont: { size: 12, color: '#fbbf24' },
+                marker: {
+                    size: 12,
+                    color: '#f59e0b',
+                    symbol: 'diamond',
+                    line: { color: '#ffffff', width: 2 }
+                },
+                hovertemplate: `<b>Цільовий ідеал: ${targetSeg.name}</b><br>${dimX.short}: %{x}<br>${dimY.short}: %{y}<br>${dimZ.short}: %{z}<extra></extra>`
+            });
+
+            // 5. Симульована точка (Ghost point)
+            if (isModified) {
+                traces.push({
+                    type: 'scatter3d',
+                    mode: 'markers+text',
+                    name: `${activeBrand.name} (План)`,
+                    x: [state.simCoords[dimX.key]],
+                    y: [state.simCoords[dimY.key]],
+                    z: [state.simCoords[dimZ.key]],
+                    text: [`${activeBrand.name} (План)`],
+                    textposition: 'top center',
+                    textfont: { size: 12, color: '#f43f5e' },
+                    marker: {
+                        size: 10,
+                        color: '#f43f5e',
+                        symbol: 'cross',
+                        line: { color: '#ffffff', width: 2 }
+                    },
+                    hovertemplate: `<b>${activeBrand.name} (Симуляція)</b><br>${dimX.short}: %{x}<br>${dimY.short}: %{y}<br>${dimZ.short}: %{z}<extra></extra>`
+                });
+
+                traces.push({
+                    type: 'scatter3d',
+                    mode: 'lines',
+                    name: 'Вектор зсуву',
+                    x: [activeBrand[dimX.key], state.simCoords[dimX.key]],
+                    y: [activeBrand[dimY.key], state.simCoords[dimY.key]],
+                    z: [activeBrand[dimZ.key], state.simCoords[dimZ.key]],
+                    line: { color: '#f43f5e', width: 5 },
+                    hoverinfo: 'none'
+                });
+            }
+
+            // 6. Пунктирний вектор до ідеалу сегмента
+            const startCoords = isModified ? state.simCoords : activeBrand;
+            traces.push({
+                type: 'scatter3d',
+                mode: 'lines',
+                name: 'Відстань до ідеалу',
+                x: [startCoords[dimX.key], targetSeg[dimX.key]],
+                y: [startCoords[dimY.key], targetSeg[dimY.key]],
+                z: [startCoords[dimZ.key], targetSeg[dimZ.key]],
+                line: { color: '#fbbf24', width: 3, dash: 'dash' },
+                hoverinfo: 'none'
+            });
+
+            const layout = {
+                margin: { l: 0, r: 0, b: 0, t: 0 },
+                paper_bgcolor: '#0f172a',
+                plot_bgcolor: '#0f172a',
+                font: { family: 'Inter, sans-serif', color: '#cbd5e1' },
+                legend: {
+                    x: 0.01,
+                    y: 0.99,
+                    bgcolor: 'rgba(15, 23, 42, 0.75)',
+                    bordercolor: '#1e293b',
+                    borderwidth: 1,
+                    font: { size: 10 }
+                },
+                scene: {
+                    xaxis: { title: dimX.label, range: [1, 7], dtick: 1, gridcolor: '#1e293b', zerolinecolor: '#475569', backgroundcolor: '#0f172a' },
+                    yaxis: { title: dimY.label, range: [1, 7], dtick: 1, gridcolor: '#1e293b', zerolinecolor: '#475569', backgroundcolor: '#0f172a' },
+                    zaxis: { title: dimZ.label, range: [1, 7], dtick: 1, gridcolor: '#1e293b', zerolinecolor: '#475569', backgroundcolor: '#0f172a' },
+                    camera: { eye: { x: 1.55, y: 1.55, z: 1.15 } }
+                }
+            };
+
+            Plotly.react('semantic3dPlot', traces, layout, { responsive: true, displayModeBar: true });
+        }
+
+        // 6-осьовий Radar Chart
+        function renderRadarChart(activeBrand, targetSeg, isModified) {
+            const thetaLabels = [...DIMENSIONS.map(d => d.short), DIMENSIONS[0].short];
+            const brandVals = [...DIMENSIONS.map(d => activeBrand[d.key]), activeBrand[DIMENSIONS[0].key]];
+            const segVals = [...DIMENSIONS.map(d => targetSeg[d.key]), targetSeg[DIMENSIONS[0].key]];
+
+            const traces = [
+                {
+                    type: 'scatterpolar',
+                    r: segVals,
+                    theta: thetaLabels,
+                    fill: 'toself',
+                    fillcolor: 'rgba(245, 158, 11, 0.14)',
+                    line: { color: '#f59e0b', width: 2 },
+                    marker: { size: 5, color: '#f59e0b' },
+                    name: `Ідеал: ${targetSeg.name}`
+                },
+                {
+                    type: 'scatterpolar',
+                    r: brandVals,
+                    theta: thetaLabels,
+                    fill: 'toself',
+                    fillcolor: 'rgba(6, 182, 212, 0.22)',
+                    line: { color: '#06b6d4', width: 2 },
+                    marker: { size: 5, color: '#06b6d4' },
+                    name: `${activeBrand.name} (Факт)`
+                }
+            ];
+
+            if (isModified) {
+                const simVals = [...DIMENSIONS.map(d => state.simCoords[d.key]), state.simCoords[DIMENSIONS[0].key]];
+                traces.push({
+                    type: 'scatterpolar',
+                    r: simVals,
+                    theta: thetaLabels,
+                    fill: 'none',
+                    line: { color: '#f43f5e', width: 2, dash: 'dot' },
+                    marker: { size: 5, color: '#f43f5e' },
+                    name: `${activeBrand.name} (План)`
+                });
+            }
+
+            const layout = {
+                margin: { l: 42, r: 42, t: 18, b: 36 },
+                paper_bgcolor: '#0f172a',
+                plot_bgcolor: '#0f172a',
+                font: { family: 'Inter, sans-serif', color: '#cbd5e1', size: 10 },
+                polar: {
+                    bgcolor: '#0f172a',
+                    radialaxis: {
+                        visible: true,
+                        range: [1, 7],
+                        dtick: 2,
+                        gridcolor: '#1e293b',
+                        linecolor: '#334155',
+                        tickfont: { size: 8, color: '#64748b' }
+                    },
+                    angularaxis: {
+                        gridcolor: '#1e293b',
+                        linecolor: '#334155',
+                        tickfont: { size: 10, color: '#e2e8f0' }
+                    }
+                },
+                legend: {
+                    orientation: 'h',
+                    x: 0.5,
+                    xanchor: 'center',
+                    y: -0.15,
+                    font: { size: 9 }
+                }
+            };
+
+            Plotly.react('radarPlot', traces, layout, { responsive: true, displayModeBar: false });
+        }
+
+        // Горизонтальний бар-чарт Weighted Impact (поточний симульований розрив × вага)
+        function renderImpactBarChart(rankedImpacts) {
+            const seg = segmentsData.find(s => s.id === state.segmentId);
+            const currentImpacts = DIMENSIONS.map(dim => {
+                const simVal = state.simCoords[dim.key];
+                const idealVal = seg[dim.key];
+                const w = state.useWeighted ? (state.weights[dim.key] || 0) : 1;
+                const imp = Math.abs(simVal - idealVal) * w;
+                return { label: dim.short, imp, color: dim.color };
+            }).sort((a, b) => a.imp - b.imp); // зростання для коректного відображення знизу вгору
+
+            const trace = {
+                type: 'bar',
+                orientation: 'h',
+                x: currentImpacts.map(i => Number(i.imp.toFixed(2))),
+                y: currentImpacts.map(i => i.label),
+                text: currentImpacts.map(i => i.imp.toFixed(2)),
+                textposition: 'auto',
+                marker: {
+                    color: currentImpacts.map(i => i.color),
+                    opacity: 0.9
+                },
+                hovertemplate: '<b>%{y}</b><br>Weighted Impact: %{x:.2f}<extra></extra>'
+            };
+
+            const layout = {
+                margin: { l: 75, r: 18, t: 6, b: 24 },
+                paper_bgcolor: '#0f172a',
+                plot_bgcolor: '#0f172a',
+                font: { family: 'JetBrains Mono, monospace', color: '#cbd5e1', size: 10 },
+                xaxis: {
+                    gridcolor: '#1e293b',
+                    zerolinecolor: '#334155',
+                    tickfont: { size: 9 }
+                },
+                yaxis: {
+                    gridcolor: 'transparent',
+                    tickfont: { family: 'Inter, sans-serif', size: 10, color: '#e2e8f0' }
+                }
+            };
+
+            Plotly.react('impactBarPlot', [trace], layout, { responsive: true, displayModeBar: false });
+        }
+
+        // Модальне вікно редагування координат
+        function openCoordsModal() {
+            const bBody = document.getElementById('modalBrandsBody');
+            bBody.innerHTML = '';
+            brandsData.forEach((b, idx) => {
+                bBody.innerHTML += `
+                    <tr>
+                        <td class="py-1.5 font-bold text-white">${b.name} <span class="text-slate-400 font-normal">(${b.firm})</span></td>
+                        ${DIMENSIONS.map(d => `
+                            <td class="py-1.5 text-center">
+                                <input type="number" id="mb_${d.key}_${idx}" value="${b[d.key]}" min="1" max="7" step="0.1"
+                                    class="w-14 text-center font-mono rounded bg-slate-800 border border-slate-700 py-1 text-white">
+                            </td>
+                        `).join('')}
+                    </tr>
+                `;
+            });
+
+            const sBody = document.getElementById('modalSegmentsBody');
+            sBody.innerHTML = '';
+            segmentsData.forEach((s, idx) => {
+                sBody.innerHTML += `
+                    <tr>
+                        <td class="py-1.5 font-bold text-white">${s.name}</td>
+                        ${DIMENSIONS.map(d => `
+                            <td class="py-1.5 text-center">
+                                <input type="number" id="ms_${d.key}_${idx}" value="${s[d.key]}" min="1" max="7" step="0.1"
+                                    class="w-14 text-center font-mono rounded bg-slate-800 border border-slate-700 py-1 text-white">
+                            </td>
+                        `).join('')}
+                    </tr>
+                `;
+            });
+
+            document.getElementById('coordsModal').classList.remove('hidden');
+        }
+
+        function closeCoordsModal() {
+            document.getElementById('coordsModal').classList.add('hidden');
+        }
+
+        function saveModalCoords() {
+            brandsData.forEach((b, idx) => {
+                DIMENSIONS.forEach(d => {
+                    const val = parseFloat(document.getElementById(`mb_${d.key}_${idx}`).value);
+                    b[d.key] = isNaN(val) ? b[d.key] : Math.max(1, Math.min(7, val));
+                });
+            });
+
+            segmentsData.forEach((s, idx) => {
+                DIMENSIONS.forEach(d => {
+                    const val = parseFloat(document.getElementById(`ms_${d.key}_${idx}`).value);
+                    s[d.key] = isNaN(val) ? s[d.key] : Math.max(1, Math.min(7, val));
+                });
+            });
+
+            closeCoordsModal();
+            onBrandOrSegmentChange(false);
+            showToast('Координати брендів і сегментів оновлено!');
+        }
+
+        function copyDecideSummary() {
+            const textArea = document.createElement('textarea');
+            textArea.value = lastDecideReportText;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast('Звіт для DECIDE скопійовано в буфер обміну');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastText').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
