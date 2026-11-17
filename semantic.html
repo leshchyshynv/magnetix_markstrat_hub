@@ -48,54 +48,81 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
 
     <!-- Верхня панель навігації -->
-    <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3">
-        <div class="max-w-[1720px] mx-auto flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-                <a href="index.html" title="Назад до Command Center" class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-indigo-600 flex items-center justify-center text-slate-950 font-extrabold shadow-lg shadow-cyan-500/20 text-xs font-mono hover:scale-105 transition">
-                    6D+P3
-                </a>
-                <div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Markstrat 6D Semantic Scales & Trend Forecaster</h1>
-                        <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                            Period 2 • Magnetix
-                        </span>
+    <header class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3">
+        <div class="max-w-[1720px] mx-auto flex flex-col gap-3">
+            <!-- Ряд 1: Логотип, заголовок та швидка навігація між модулями -->
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <a href="index.html" title="Назад до Command Center" class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-indigo-600 flex items-center justify-center text-slate-950 font-extrabold shadow-lg shadow-cyan-500/20 text-xs font-mono hover:scale-105 transition shrink-0">
+                        6D+P3
+                    </a>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Markstrat 6D Semantic Scales & Trend Forecaster</h1>
+                            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                                Period 2 • Magnetix
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400">Зважений 6D-аналіз, еволюція ідеалів (P0→P1→P2) та прогноз цілей на Період 3</p>
                     </div>
-                    <p class="text-xs text-slate-400">Зважений 6D-аналіз, еволюція ідеалів (P0→P1→P2) та прогноз цілей на Період 3</p>
                 </div>
+
+                <!-- Панель переходу між тулами -->
+                <nav aria-label="Навігація між модулями" class="flex flex-wrap items-center gap-1.5 bg-slate-950/80 border border-slate-800 p-1.5 rounded-xl">
+                    <a href="index.html" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5">
+                        <span>← Хаб (Головна)</span>
+                    </a>
+                    <a href="mds.html" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                        <span>3D MDS Карта</span>
+                    </a>
+                    <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1.5 cursor-default shadow-sm">
+                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                        <span>6D Семантика</span>
+                    </span>
+                    <a href="allocator.html" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        <span>Медіа та Дистрибуція</span>
+                    </a>
+                </nav>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2.5">
-                <!-- Перемикач цілі: P2 Факт vs P3 Прогноз -->
-                <div class="flex items-center bg-slate-800/90 border border-slate-700 p-1 rounded-xl text-xs font-semibold">
-                    <button id="targetModeP2Btn" onclick="setTargetMode('P2')" class="px-2.5 py-1 rounded-lg transition text-slate-400 hover:text-white">
-                        Ціль: P2 Факт
-                    </button>
-                    <button id="targetModeP3Btn" onclick="setTargetMode('P3')" class="px-2.5 py-1 rounded-lg transition bg-amber-500 text-slate-950 shadow">
-                        Ціль: P3 Прогноз ★
-                    </button>
+            <!-- Ряд 2: Інструментальна панель керування режимами та експорту -->
+            <div class="flex flex-wrap items-center justify-between gap-2.5 pt-2.5 border-t border-slate-800/80">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <!-- Перемикач цілі: P2 Факт vs P3 Прогноз -->
+                    <div class="flex items-center bg-slate-800/90 border border-slate-700 p-1 rounded-xl text-xs font-semibold">
+                        <button id="targetModeP2Btn" onclick="setTargetMode('P2')" class="px-2.5 py-1 rounded-lg transition text-slate-400 hover:text-white">
+                            Ціль: P2 Факт
+                        </button>
+                        <button id="targetModeP3Btn" onclick="setTargetMode('P3')" class="px-2.5 py-1 rounded-lg transition bg-amber-500 text-slate-950 shadow">
+                            Ціль: P3 Прогноз ★
+                        </button>
+                    </div>
+
+                    <!-- Перемикач Weighted vs Unweighted -->
+                    <div class="flex items-center gap-2 bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-xl">
+                        <span id="weightedModeLabel" class="text-xs font-semibold text-cyan-300">Weighted (Зважена)</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="weightedToggle" checked onchange="onWeightedToggle()" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+                        </label>
+                    </div>
                 </div>
 
-                <!-- Перемикач Weighted vs Unweighted -->
-                <div class="flex items-center gap-2 bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-xl">
-                    <span id="weightedModeLabel" class="text-xs font-semibold text-cyan-300">Weighted (Зважена)</span>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="weightedToggle" checked onchange="onWeightedToggle()" class="sr-only peer">
-                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
-                    </label>
+                <div class="flex items-center gap-2">
+                    <!-- Модальне вікно редагування даних -->
+                    <button onclick="openDataModal()" class="px-3 py-1.5 text-xs font-medium rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        <span>Редагувати базу</span>
+                    </button>
+
+                    <!-- Копіювати звіт для DECIDE -->
+                    <button onclick="copyDecideReport()" class="px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white transition flex items-center gap-2 shadow-md shadow-emerald-600/20">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                        <span>Копіювати для DECIDE</span>
+                    </button>
                 </div>
-
-                <!-- Модальне вікно редагування даних -->
-                <button onclick="openDataModal()" class="px-3 py-2 text-xs sm:text-sm font-medium rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5">
-                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    <span class="hidden md:inline">Редагувати базу</span>
-                </button>
-
-                <!-- Копіювати звіт для DECIDE -->
-                <button onclick="copyDecideReport()" class="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white transition flex items-center gap-2 shadow-md shadow-emerald-600/20">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                    <span>Копіювати для DECIDE</span>
-                </button>
             </div>
         </div>
     </header>
